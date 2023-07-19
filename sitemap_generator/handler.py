@@ -36,11 +36,10 @@ import os
 from pathlib import Path
 from shutil import copy2
 from typing import Iterator
-from xml.etree.ElementTree import fromstring
 
-from sitemap_generator.util import (url_join, get_sitemapindex,
-                                    SITEMAPINDEX_FOREACH, get_urlset,
-                                    URLSET_FOREACH, walk_path,
+from sitemap_generator.util import (url_join, get_smi, add_smi_node,
+                                    get_urlset, get_urlset,
+                                    write_tree, walk_path,
                                     parse, OPTION_VERBOSITY)
 
 LOGGER = logging.getLogger(__name__)
@@ -57,7 +56,6 @@ NAMESPACE = TREE / SOURCE_REPO_PATH
 SITEMAP_LOC = os.environ.get('SITEMAP_LOC', '/sitemap')
 # Sitemap directory objects
 SITEMAP_DIR = Path(SITEMAP_LOC)
-SITEMAP_ARGS = {'encoding': 'utf-8', 'xml_declaration': True}
 
 
 class Handler:
@@ -75,7 +73,7 @@ class Handler:
         self.root_path = filepath
         self.uri_stem = uri_stem
 
-    def handle(self, ) -> None:
+    def handle(self) -> None:
         """
         Handle sitemap creation sitemapindex
 
@@ -112,13 +110,12 @@ class Handler:
                 if '$' in url_:
                     LOGGER.warning(f'Regex detected in {filename}')
                     return
-                urlitem = URLSET_FOREACH.format(url_, file_time)
-                root.append(fromstring(urlitem))
+                add_smi_node(root, url_, file_time)
 
             # Write sitemap.xml
             fidx = f'{filename.stem}__{i}'
             sitemap_file = (filename.parent / fidx).with_suffix('.xml')
-            tree.write(sitemap_file, **SITEMAP_ARGS)
+            write_tree(tree, sitemap_file)
 
     def make_sitemap(self, files: Iterator[Path]) -> None:
         """
@@ -128,7 +125,7 @@ class Handler:
 
         :returns: `None`
         """
-        tree, root = get_sitemapindex()
+        tree, root = get_smi()
         for f in files:
             LOGGER.debug(f'Processing urlset: {f.resolve()}')
 
@@ -148,13 +145,12 @@ class Handler:
 
             # create to link /sitemap/_sitemap.xml
             file_time = self._get_filetime(file_path)
-            url_ = url_join(self.uri_stem, str(file_path))
-            sitemapitem = SITEMAPINDEX_FOREACH.format(url_, file_time)
-            root.append(fromstring(sitemapitem))
+            url_ = url_join(self.uri_stem, file_path)
+            add_smi_node(root, url_, file_time)
 
         sitemap_out = SITEMAP_DIR / '_sitemap.xml'
         LOGGER.debug(f'Writing sitemapindex to {sitemap_out}')
-        tree.write(sitemap_out, **SITEMAP_ARGS)
+        write_tree(tree, sitemap_out)
 
     def _get_filetime(self, filename: Path) -> str:
         """

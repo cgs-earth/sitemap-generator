@@ -38,13 +38,20 @@ import xml.etree.ElementTree as ET
 
 LOGGER = logging.getLogger(__name__)
 
-MODELS = Path(__file__).parent.resolve() / 'models'
-
+SITEMAP_ARGS = {'encoding': 'utf-8', 'xml_declaration': True}
+SITEMAPINDEX = '''<?xml version="1.0"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+</sitemapindex>
+'''
 SITEMAPINDEX_FOREACH = '''
 <sitemap>
     <loc>{}</loc>
     <lastmod>{}</lastmod>
 </sitemap>
+'''
+URLSET = '''<?xml version="1.0"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+</urlset>
 '''
 URLSET_FOREACH = '''
 <url>
@@ -54,16 +61,38 @@ URLSET_FOREACH = '''
 '''
 
 
-def get_sitemapindex():
-    tree = ET.parse(MODELS / 'sitemapindex.xml')
-    ET.indent(tree, '  ')
-    return tree, tree.getroot()
+def write_tree(tree, file):
+    tree.write(file, **SITEMAP_ARGS)
+
+
+def get_smi():
+    root = ET.fromstring(SITEMAPINDEX)
+    tree = ET.ElementTree(root)
+    try:
+        ET.indent(tree)
+    except AttributeError:
+        LOGGER.warning('Unable to indent')
+    return tree, root
+
+
+def add_smi_node(node, loc, lastmod):
+    _ = SITEMAPINDEX_FOREACH.format(loc, lastmod)
+    node.append(ET.fromstring(_))
 
 
 def get_urlset():
-    tree = ET.parse(MODELS / 'urlset.xml')
-    ET.indent(tree, '  ')
-    return tree, tree.getroot()
+    root = ET.fromstring(URLSET)
+    tree = ET.ElementTree(root)
+    try:
+        ET.indent(tree)
+    except AttributeError:
+        LOGGER.warning('Unable to indent')
+    return tree, root
+
+
+def add_urlset_node(node, loc, lastmod):
+    _ = URLSET_FOREACH.format(loc, lastmod)
+    node.append(ET.fromstring(_))
 
 
 def walk_path(path: Path, regex: str) -> Iterator[Path]:
@@ -96,7 +125,7 @@ def url_join(*parts):
 
     :returns: str of resulting URL
     """
-    return '/'.join([p.strip().strip('/') for p in parts])
+    return '/'.join([str(p).strip().strip('/') for p in parts])
 
 
 def parse(filename: Path, n: int = 50000) -> list:
