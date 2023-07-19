@@ -34,6 +34,7 @@ jobs:
           SOURCE_REPO: geoconnex.us
         run: |
           pytest tests/test_util.py
+          pytest tests/test_handler.py
       - name: run flake8 ⚙️
         run: |
           find . -type f -name "*.py" -not -path "./geoconnex.us/*" | xargs flake8
