@@ -118,7 +118,7 @@ setup(
     project_urls={
         'Homepage': 'https://github.com/cgs-earth/sitemap-generator',
         'Source Code': 'https://github.com/cgs-earth/sitemap-generator',
-        'Issue Tracker': 'https://github.com/cgs-earth/sitemap-generator/issues'
+        'Issue Tracker': 'https://github.com/cgs-earth/sitemap-generator/issues'  # noqa
     },
     cmdclass={'test': PyTest},
     test_suite='tests.run_tests'

@@ -1,0 +1,39 @@
+name: Run tests
+
+on: [push]
+
+jobs:
+  main:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        include:
+          - python-version: 3.8
+          - python-version: 3.9
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Checkout Geoconnex Namespace
+        run: |
+          git clone -b master https://github.com/internetofwater/geoconnex.us.git geoconnex.us
+      - uses: actions/setup-python@v2
+        name: Setup Python ${{ matrix.python-version }}
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install requirements 📦
+        env:
+          SOURCE_REPO: geoconnex.us
+        run: |
+          pip3 install -r requirements.txt
+          pip3 install -r requirements-dev.txt
+          python3 setup.py install
+      - name: run unit tests ⚙️
+        env:
+          SOURCE_REPO: geoconnex.us
+          SITEMAP_DIR: sitemap
+        run: |
+          pytest tests/test_util.py
+          pytest tests/test_handler.py
+      - name: run flake8 ⚙️
+        run: |
+          find . -type f -name "*.py" -not -path "./geoconnex.us/*" | xargs flake8
