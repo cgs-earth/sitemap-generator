@@ -52,10 +52,8 @@ REPO = Repo(SOURCE_REPO)
 TREE = REPO.heads.master.commit.tree
 NAMESPACE = TREE / SOURCE_REPO_PATH
 
-# Environment var for sitemap output
-SITEMAP_LOC = os.environ.get('SITEMAP_LOC', '/sitemap')
 # Sitemap directory objects
-SITEMAP_DIR = Path(SITEMAP_LOC)
+SITEMAP_DIR = Path(os.environ.get('SITEMAP_DIR', '/sitemap'))
 
 
 class Handler:

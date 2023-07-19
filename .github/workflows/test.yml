@@ -32,6 +32,7 @@ jobs:
       - name: run unit tests ⚙️
         env:
           SOURCE_REPO: geoconnex.us
+          SITEMAP_DIR: sitemap
         run: |
           pytest tests/test_util.py
           pytest tests/test_handler.py
