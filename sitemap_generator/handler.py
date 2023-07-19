@@ -38,7 +38,7 @@ from shutil import copy2
 from typing import Iterator
 
 from sitemap_generator.util import (url_join, get_smi, add_smi_node,
-                                    get_urlset, get_urlset,
+                                    get_urlset, add_urlset_node,
                                     write_tree, walk_path,
                                     parse, OPTION_VERBOSITY)
 
@@ -108,7 +108,7 @@ class Handler:
                 if '$' in url_:
                     LOGGER.warning(f'Regex detected in {filename}')
                     return
-                add_smi_node(root, url_, file_time)
+                add_urlset_node(root, url_, file_time)
 
             # Write sitemap.xml
             fidx = f'{filename.stem}__{i}'

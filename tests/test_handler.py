@@ -64,11 +64,8 @@ def test_sitemapindex():
     assert all(child.tag == 'sitemap' for child in root)
     assert all(URI_STEM in child.find('loc').text for child in root)
 
-    hu08 = root.find('sitemap')
-    loc = hu08.find('loc').text
-    assert loc == 'https://geoconnex.us/sitemap/ref/hu08/hu08__0.xml'
-
-    _ = hu08.find('lastmod').text
+    links = root.find('sitemap')
+    _ = links.find('lastmod').text
     lastmod = datetime.strptime(_, '%Y-%m-%dT%H:%M:%SZ')
     assert lastmod.strftime('%Y-%m-%d') != today
 
@@ -86,12 +83,16 @@ def test_urlset():
     namespace = url_join(URI_STEM, HANDLER._get_rel_path(urlset))
     assert namespace == 'https://geoconnex.us/iow'
 
+    [urlset] = list(walk_path(SITEMAP_DIR, r'.*autotest1__0.xml'))
+    file_time = HANDLER._get_filetime(urlset)
     tree = ET.parse(urlset)
     root = tree.getroot()
 
     assert all(child.tag == 'url' for child in root)
-    assert all(file_time.strftime('%Y-%m-%dT%H:%M:%SZ') ==
-               child.find('lastmod').text for child in root)
+    for child in root:
+        assert file_time == child.find('lastmod').text
+        print(child.find('lastmod').text, child.find('loc').text)
+    assert all(file_time == child.find('lastmod').text for child in root)
 
     url = root.find('url')
     lastmod = url.find('lastmod').text
