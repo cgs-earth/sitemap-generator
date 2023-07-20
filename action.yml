@@ -58,9 +58,6 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v3
-      with:
-        repository: cgs-earth/sitemap-generator
     - shell: bash
       env:
         SOURCE_REPO: ${{ inputs.source_repo }}
@@ -69,3 +66,15 @@ runs:
       run: |
         pip3 install git+https://github.com/cgs-earth/sitemap-generator.git
         sitemap-generator run ${{ inputs.namespace_dir }}
+
+    - name: Zip sitemap
+      uses: vimtor/action-zip@v1
+      with:
+        files: ${{ inputs.sitemap_dir }}
+        dest: sitemap.zip
+
+    - name: Archive Sitemap
+      uses: actions/upload-artifact@v3
+      with:
+        name: sitemap
+        path: sitemap.zip
