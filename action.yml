@@ -1,0 +1,68 @@
+# =================================================================
+#
+# Authors: Benjamin Webb <bwebb@lincolninst.edu>
+#
+# Copyright (c) 2023 Benjamin Webb
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+#
+# =================================================================
+
+name: "Sitemap Generator"
+
+description: "Generate Sitemap in GitHub Actions"
+
+branding:
+  icon: server
+  color: purple
+
+inputs:
+  namespace_dir:
+    description: "Filepath to load data from"
+    required: true
+    default: "./namespaces"
+  sitemap_dir:
+    description: "Directory for sitemap output"
+    required: true
+    default: "./sitemap"
+  source_repo:
+    description: "Source repository"
+    required: true
+    default: "geoconnex.us"
+  source_repo_path:
+    description: "Filepath to git lastmod from"
+    required: true
+    default: "namespaces"
+outputs:
+  sitemap:
+    description: "Sitemap folder"
+runs:
+  using: "composite"
+  steps:
+    - shell: bash
+      env:
+        SOURCE_REPO: ${{ inputs.source_repo }}
+        SOURCE_REPO_PATH: ${{ inputs.source_repo_path }}
+        SITEMAP_DIR: ${{ inputs.sitemap_dir }}
+      run: |
+        pip3 install git+https://github.com/cgs-earth/sitemap-generator.git
+        sitemap-generator run ${{ inputs.namespace_dir }}
