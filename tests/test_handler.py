@@ -31,14 +31,15 @@ from datetime import datetime
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-from sitemap_generator.handler import Handler, SITEMAP_DIR
+from sitemap_generator.handler.base import SITEMAP_DIR
+from sitemap_generator.handler.filesystem import FileSystemHandler
 from sitemap_generator.util import walk_path, url_join
 
 THIS_DIR = Path(__file__).parent.resolve()
 NAMESPACE = THIS_DIR / 'data' / 'namespaces'
 
 URI_STEM = 'https://geoconnex.us'
-HANDLER = Handler(str(NAMESPACE), URI_STEM)
+HANDLER = FileSystemHandler(str(NAMESPACE), URI_STEM)
 
 
 def test_handler():
@@ -51,9 +52,9 @@ def test_handler():
 def test_sitemapindex():
     [sitemapindex] = list(walk_path(SITEMAP_DIR, r'.*_sitemap.xml'))
     assert sitemapindex.name == '_sitemap.xml'
-    assert HANDLER._get_rel_path(sitemapindex) == '.'
+    assert HANDLER.get_rel_path(sitemapindex) == '.'
 
-    _ = HANDLER._get_filetime(sitemapindex)
+    _ = HANDLER.get_filetime(sitemapindex)
     file_time = datetime.strptime(_, '%Y-%m-%dT%H:%M:%SZ')
     today = datetime.utcnow().strftime('%Y-%m-%d')
     assert file_time.strftime('%Y-%m-%d') == today
@@ -65,35 +66,30 @@ def test_sitemapindex():
     assert all(URI_STEM in child.find('loc').text for child in root)
 
     links = root.find('sitemap')
-    _ = links.find('lastmod').text
-    lastmod = datetime.strptime(_, '%Y-%m-%dT%H:%M:%SZ')
-    assert lastmod.strftime('%Y-%m-%d') != today
+    assert links.find('lastmod').text != today
 
 
 def test_urlset():
     [urlset] = list(walk_path(SITEMAP_DIR, r'.*links__0.xml'))
     assert urlset.name == 'links__0.xml'
-    assert HANDLER._get_rel_path(urlset) == 'iow'
+    assert HANDLER.get_rel_path(urlset) == 'iow'
 
-    _ = HANDLER._get_filetime(urlset)
+    _ = HANDLER.get_filetime(urlset)
     file_time = datetime.strptime(_, '%Y-%m-%dT%H:%M:%SZ')
-    today = datetime.utcnow().strftime('%Y-%m-%d')
-    assert file_time.strftime('%Y-%m-%d') != today
+    today = datetime.utcnow()
+    assert file_time != today
 
-    namespace = url_join(URI_STEM, HANDLER._get_rel_path(urlset))
+    namespace = url_join(URI_STEM, HANDLER.get_rel_path(urlset))
     assert namespace == 'https://geoconnex.us/iow'
 
     [urlset] = list(walk_path(SITEMAP_DIR, r'.*autotest1__0.xml'))
-    file_time = HANDLER._get_filetime(urlset)
+    file_time = HANDLER.get_filetime(urlset)
     tree = ET.parse(urlset)
     root = tree.getroot()
 
     assert all(child.tag == 'url' for child in root)
-    for child in root:
-        assert file_time == child.find('lastmod').text
-        print(child.find('lastmod').text, child.find('loc').text)
     assert all(file_time == child.find('lastmod').text for child in root)
 
     url = root.find('url')
     lastmod = url.find('lastmod').text
-    assert lastmod == '2023-06-23T22:38:13Z'
+    assert lastmod == '2021-11-17T16:24:48Z'

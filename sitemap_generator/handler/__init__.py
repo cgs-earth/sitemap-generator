@@ -27,41 +27,25 @@
 #
 # =================================================================
 
-from pathlib import Path
+'''Handler classs'''
 
-from sitemap_generator import util
+import click
 
-THIS_DIR = Path(__file__).parent.resolve()
-NAMESPACE = THIS_DIR / 'data' / 'namespaces'
-
-
-def test_walk_path():
-    glob_all = list(util.walk_path(NAMESPACE, r'.*'))
-    assert len(glob_all) >= 3
-
-    glob = util.walk_path(NAMESPACE, r'.*csv')
-    assert len(list(glob)) < len(glob_all)
-
-    glob = util.walk_path(NAMESPACE, r'.*xml')
-    assert len(list(glob)) < len(glob_all)
+from sitemap_generator.handler.filesystem import FileSystemHandler
+from sitemap_generator.util import OPTION_VERBOSITY
 
 
-def test_parse_and_chunk():
-    glob = util.walk_path(NAMESPACE / 'ref', r'.*csv')
-    hu08 = next(glob)
-    assert hu08.stem == 'hu08'
+@click.command()
+@click.pass_context
+@OPTION_VERBOSITY
+@click.argument('filepath', type=click.Path())
+@click.option('-s', '--uri_stem', type=str, default='https://geoconnex.us/',
+              help='uri stem to be removed from short url for keyword')
+def run(ctx, verbosity, filepath, uri_stem):
+    if filepath.is_dir():
+        handler = FileSystemHandler(filepath, uri_stem)
+        handler.handle()
 
-    lines = util.parse(hu08)
-    assert len(lines) == 1
-    assert len(lines[-1]) == 2399
 
-    chunks = util.parse(hu08, 1000)
-    assert len(chunks) == 3
-    assert len(chunks[0]) == 1000
-    assert len(chunks[-1]) == 399
-
-    [lines] = util.parse(hu08)
-    chunks = util.chunkify(lines, 100)
-    assert len(chunks) == 24
-    assert len(chunks[0]) == 100
-    assert len(chunks[-1]) == 99
+if __name__ == '__main__':
+    run()

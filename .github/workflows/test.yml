@@ -13,9 +13,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Checkout Geoconnex Namespace
+      - name: Checkout Cached Geoconnex Namespace
         run: |
           git clone -b master https://github.com/internetofwater/geoconnex.us.git geoconnex.us
+          cd geoconnex.us
+          git checkout e0e1c2ba0d023bfd80f3e6d76c85c01fab35c581
       - uses: actions/setup-python@v2
         name: Setup Python ${{ matrix.python-version }}
         with:
