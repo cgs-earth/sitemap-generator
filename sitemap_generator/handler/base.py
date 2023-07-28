@@ -27,10 +27,7 @@
 #
 # =================================================================
 
-import click
-
-from datetime import datetime as dt
-from git import Repo
+from datetime import datetime
 import logging
 import os
 from pathlib import Path
@@ -39,24 +36,16 @@ from typing import Iterator
 
 from sitemap_generator.util import (url_join, get_smi, add_smi_node,
                                     get_urlset, add_urlset_node,
-                                    write_tree, walk_path,
-                                    parse, OPTION_VERBOSITY)
+                                    write_tree)
 
 LOGGER = logging.getLogger(__name__)
 
-# Environment Vars for Git Repository to source last mod
-SOURCE_REPO = os.environ.get('SOURCE_REPO', '/geoconnex.us')
-SOURCE_REPO_PATH = os.environ.get('SOURCE_REPO_PATH', 'namespaces')
-# Git Repository objects
-REPO = Repo(SOURCE_REPO)
-TREE = REPO.heads.master.commit.tree
-NAMESPACE = TREE / SOURCE_REPO_PATH
 
 # Sitemap directory objects
 SITEMAP_DIR = Path(os.environ.get('SITEMAP_DIR', '/sitemap'))
 
 
-class Handler:
+class BaseHandler:
     """Sitemap Generator Handler"""
 
     def __init__(self, filepath: Path, uri_stem: str) -> None:
@@ -77,16 +66,35 @@ class Handler:
 
         :returns: `None`
         """
+        raise NotImplementedError
 
-        LOGGER.debug('Making urlsets')
-        [self.make_urlset(file)
-         for file in walk_path(self.root_path, r'.*.csv')]
+    def parse(self) -> None:
+        """
+        Parse sitemap creation sitemapindex
 
-        LOGGER.debug('Making sitemap index')
-        urlsets = walk_path(self.root_path, r'.*.xml')
-        self.make_sitemap(urlsets)
+        :returns: `None`
+        """
+        raise NotImplementedError
 
-        LOGGER.debug('Finished task')
+    def get_filetime(self, filename: Path) -> str:
+        """
+        Gets relative path to file.
+
+        :param filename: `Path` of file
+
+        :returns file_time: `str` of file lastmod as W3C Datetime
+        """
+        raise NotImplementedError
+
+    def get_rel_path(self, filename: Path) -> str:
+        """
+        Gets relative path to file.
+
+        :param filename: `Path` of file
+
+        :returns parent: `str` of parent path
+        """
+        raise NotImplementedError
 
     def make_urlset(self, filename: Path) -> None:
         """
@@ -97,8 +105,8 @@ class Handler:
         :returns: `None`
         """
         LOGGER.debug(f'Making urlset for {filename}')
-        file_time = self._get_filetime(filename)
-        urlsets = parse(filename)
+        file_time = self.get_filetime(filename)
+        urlsets = self.parse(filename)
 
         for i, chunk in enumerate(urlsets):
             # Build sitemaps for each csv file
@@ -114,6 +122,11 @@ class Handler:
             fidx = f'{filename.stem}__{i}'
             sitemap_file = (filename.parent / fidx).with_suffix('.xml')
             write_tree(tree, sitemap_file)
+
+            _ = datetime.strptime(file_time, '%Y-%m-%dT%H:%M:%SZ')
+            mtime = _.timestamp()
+            atime = datetime.now().timestamp()
+            os.utime(sitemap_file, (atime, mtime))
 
     def make_sitemap(self, files: Iterator[Path]) -> None:
         """
@@ -135,78 +148,17 @@ class Handler:
                 continue
 
             # Move xml to /sitemaps
-            filepath = (SITEMAP_DIR / self._get_rel_path(f))
+            filepath = (SITEMAP_DIR / self.get_rel_path(f))
             filepath.mkdir(parents=True, exist_ok=True)
             file_path = filepath / f.name
             LOGGER.debug(f'Copying urlset to {filepath}')
             copy2(f, file_path)
 
             # create to link /sitemap/_sitemap.xml
-            file_time = self._get_filetime(file_path)
+            file_time = self.get_filetime(file_path)
             url_ = url_join(self.uri_stem, file_path)
             add_smi_node(root, url_, file_time)
 
         sitemap_out = SITEMAP_DIR / '_sitemap.xml'
         LOGGER.debug(f'Writing sitemapindex to {sitemap_out}')
         write_tree(tree, sitemap_out)
-
-    def _get_filetime(self, filename: Path) -> str:
-        """
-        Gets relative path to file.
-
-        :param filename: `Path` of file
-
-        :returns file_time: `str` of file lastmod as W3C Datetime
-        """
-        try:
-            LOGGER.debug('Getting filetime from Git commit')
-            blob = (NAMESPACE / self._get_rel_path(filename))
-            commits = REPO.iter_commits(paths=blob.path, max_count=1)
-            commit = next(commits)
-            file_time = commit.committed_datetime
-
-        except KeyError as err:
-            LOGGER.warning(err)
-            _ = os.path.getmtime(filename)
-            file_time = dt.fromtimestamp(_)
-
-        except OSError as err:
-            LOGGER.warning(err)
-            file_time = dt.now()
-
-        return file_time.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-    def _get_rel_path(self, filename: Path) -> str:
-        """
-        Gets relative path to file.
-
-        :param filename: `Path` of file
-
-        :returns parent: `str` of parent path
-        """
-        full_path = str(filename.resolve())
-        LOGGER.debug(f'Resolving relative path for {full_path}')
-        if self.root_path in full_path:
-            LOGGER.debug('File in namespaces context')
-            parent = filename.parent.relative_to(self.root_path)
-        else:
-            LOGGER.debug('File in sitemap context')
-            parent = filename.parent.relative_to(SITEMAP_DIR)
-
-        LOGGER.debug(f'Parent dir of file is: {parent}')
-        return str(parent)
-
-
-@click.command()
-@click.pass_context
-@OPTION_VERBOSITY
-@click.argument('filepath', type=click.Path())
-@click.option('-s', '--uri_stem', type=str, default='https://geoconnex.us/',
-              help='uri stem to be removed from short url for keyword')
-def run(ctx, verbosity, filepath, uri_stem):
-    handler = Handler(filepath, uri_stem)
-    handler.handle()
-
-
-if __name__ == '__main__':
-    run()
