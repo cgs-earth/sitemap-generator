@@ -17,7 +17,7 @@ jobs:
         run: |
           git clone -b master https://github.com/internetofwater/geoconnex.us.git geoconnex.us
           cd geoconnex.us
-          git checkout e0e1c2ba0d023bfd80f3e6d76c85c01fab35c581
+          git checkout 4cc92f91abbecf20650ac595d81726062ffb3894
       - uses: actions/setup-python@v2
         name: Setup Python ${{ matrix.python-version }}
         with:

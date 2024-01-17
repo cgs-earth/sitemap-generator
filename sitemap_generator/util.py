@@ -62,7 +62,12 @@ URLSET_FOREACH = '''
 
 
 def write_tree(tree, file):
+    ET.register_namespace('', 'http://www.sitemaps.org/schemas/sitemap/0.9')
     tree.write(file, **SITEMAP_ARGS)
+    try:
+        ET._namespace_map.pop('http://www.sitemaps.org/schemas/sitemap/0.9')
+    except KeyError:
+        print('No default namespace')
 
 
 def get_smi():

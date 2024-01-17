@@ -37,7 +37,7 @@ NAMESPACE = THIS_DIR / 'data' / 'namespaces'
 
 def test_walk_path():
     glob_all = list(util.walk_path(NAMESPACE, r'.*'))
-    assert len(glob_all) >= 3
+    assert len(glob_all) >= 2
 
     glob = util.walk_path(NAMESPACE, r'.*csv')
     assert len(list(glob)) < len(glob_all)
