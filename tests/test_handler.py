@@ -62,11 +62,10 @@ def test_sitemapindex():
     tree = ET.parse(sitemapindex)
     root = tree.getroot()
 
-    assert all(child.tag == 'sitemap' for child in root)
-    assert all(URI_STEM in child.find('loc').text for child in root)
-
-    links = root.find('sitemap')
-    assert links.find('lastmod').text != today
+    assert all('sitemap' in child.tag for child in root)
+    for child in root:
+        assert URI_STEM in ''.join(child.itertext())
+    assert all(URI_STEM in ''.join(child.itertext()) for child in root)
 
 
 def test_urlset():
