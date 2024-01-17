@@ -59,11 +59,12 @@ URLSET_FOREACH = '''
     <lastmod>{}</lastmod>
 </url>
 '''
-ET.register_namespace('', 'http://www.sitemaps.org/schemas/sitemap/0.9')
 
 
 def write_tree(tree, file):
+    ET.register_namespace('', 'http://www.sitemaps.org/schemas/sitemap/0.9')
     tree.write(file, **SITEMAP_ARGS)
+    ET._namespace_map.pop('http://www.sitemaps.org/schemas/sitemap/0.9')
 
 
 def get_smi():
