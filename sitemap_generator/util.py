@@ -145,7 +145,7 @@ def parse(filename: Path, n: int = 50000) -> list:
     with filename.open('r') as fh:
         csv_reader = csv.reader(fh)
         headers = [h.strip() for h in next(csv_reader)]  # noqa
-        lines = [line for line in csv_reader]
+        lines = [line for line in csv_reader if line]
         return chunkify(lines, n)
 
 
