@@ -66,8 +66,11 @@ class FileSystemHandler(BaseHandler):
         :returns: `None`
         """
         LOGGER.debug('Making urlsets')
-        [self.make_urlset(file)
-         for file in walk_path(self.root_path, r'.*.csv')]
+        [
+            self.make_urlset(file)
+            for file in walk_path(self.root_path, r'.*.csv')
+            if file.name != 'example.csv'
+        ]
 
         LOGGER.debug('Making sitemap index')
         urlsets = walk_path(self.root_path, r'.*.xml')
