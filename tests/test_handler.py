@@ -27,59 +27,30 @@
 #
 # =================================================================
 
-from datetime import datetime
+import datetime
 from pathlib import Path
-import xml.etree.ElementTree as ET
 
-from sitemap_generator.handler.filesystem import FileSystemHandler
-from sitemap_generator.util import walk_path, url_join
+from sitemap_generator.handler.base import FileSystemHandler
 from pytest import fixture
 
-URI_STEM = 'https://geoconnex.us'
+from sitemap_generator.util import get_all_sitemap_sources, write_tree_to_file
+import tempfile
+
 
 @fixture()
-def HANDLER():
-    THIS_DIR = Path(__file__).parent.resolve()
-    NAMESPACE = THIS_DIR / 'data' / 'namespaces'
+def handler():
+    return FileSystemHandler()
 
-    return FileSystemHandler(
-        NAMESPACE, URI_STEM, sitemap_output_dir=Path("/tmp/sitemaps")
-    )
+def test_sitemap_index_generation(handler):
+    sources = get_all_sitemap_sources(Path(__file__).parent / "data")
+    for source in sources:
+        assert source.metadata
+    tree= handler.make_sitemap_index("https://geoconnex.us", sources, Path(__file__).parent / "data")
 
-def test_handler(HANDLER: FileSystemHandler):
-    HANDLER.generate()
-    output_files = list(walk_path(HANDLER.sitemap_output_dir, r'.*'))
-    assert len(output_files) == 3
+    tmpFile = tempfile.NamedTemporaryFile()
+    write_tree_to_file(tree, Path(tmpFile.name))
+    assert Path(tmpFile.name).exists()
 
-
-def test_sitemapindex(HANDLER: FileSystemHandler):
-    [sitemapindex] = list(walk_path(HANDLER.sitemap_output_dir, r".*_sitemap.xml"))
-    assert sitemapindex.name == '_sitemap.xml'
-    assert HANDLER.get_rel_path(sitemapindex) == '.'
-
-    _ = HANDLER.get_filetime(sitemapindex)
-    file_time = datetime.strptime(_, '%Y-%m-%dT%H:%M:%SZ')
-    today = datetime.utcnow().strftime('%Y-%m-%d')
-    assert file_time.strftime('%Y-%m-%d') == today
-
-    tree = ET.parse(sitemapindex)
-    root = tree.getroot()
-
-    assert all('sitemap' in child.tag for child in root)
-    for child in root:
-        assert URI_STEM in ''.join(child.itertext())
-    assert all(URI_STEM in ''.join(child.itertext()) for child in root)
-
-
-def test_urlset(HANDLER: FileSystemHandler):
-    [urlset] = list(walk_path(HANDLER.sitemap_output_dir, r".*links__0.xml"))
-    assert urlset.name == 'links__0.xml'
-    assert HANDLER.get_rel_path(urlset) == 'iow'
-
-    _ = HANDLER.get_filetime(urlset)
-    file_time = datetime.strptime(_, '%Y-%m-%dT%H:%M:%SZ')
-    today = datetime.utcnow()
-    assert file_time != today
-
-    namespace = url_join(URI_STEM, HANDLER.get_rel_path(urlset))
-    assert namespace == 'https://geoconnex.us/iow'
+    written_data = Path(tmpFile.name).read_text()
+    assert "hu08" in written_data
+    assert "contact_email" in written_data

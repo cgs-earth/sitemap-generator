@@ -27,155 +27,168 @@
 #
 # =================================================================
 
+from curses.ascii import SI
+from dataclasses import dataclass
+import datetime
+from operator import le
+from typing import Generator, Literal, NamedTuple, Optional, Tuple
+
 import click
 import csv
 import logging
 from pathlib import Path
-import re
 import sys
-from typing import Iterator
 import xml.etree.ElementTree as ET
+import json
+
 
 LOGGER = logging.getLogger(__name__)
 
-SITEMAP_ARGS = {'encoding': 'utf-8', 'xml_declaration': True}
-SITEMAPINDEX = '''<?xml version="1.0"?>
-<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-</sitemapindex>
-'''
-SITEMAPINDEX_FOREACH = '''
-<sitemap>
-    <loc>{}</loc>
-    <lastmod>{}</lastmod>
-</sitemap>
-'''
-URLSET = '''<?xml version="1.0"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-</urlset>
-'''
-URLSET_FOREACH = '''
-<url>
-    <loc>{}</loc>
-    <lastmod>{}</lastmod>
-</url>
-'''
+
+class UrlToGeoconnexPid(NamedTuple):
+    source_url: str
+    geoconnex_pid: str
 
 
-def write_tree(tree, file):
-    ET.register_namespace('', 'http://www.sitemaps.org/schemas/sitemap/0.9')
-    tree.write(file, **SITEMAP_ARGS)
-    try:
-        ET._namespace_map.pop('http://www.sitemaps.org/schemas/sitemap/0.9')
-    except KeyError:
-        print('No default namespace')
+def csv_to_sitemap_url_list(csv_path: Path) -> Generator[UrlToGeoconnexPid, None, None]:
+    with csv_path.open() as f:
+        reader = csv.reader(f)
+
+        header = next(reader)  # read first row (column names)
+        id_index = header.index("id")  # get position of 'id' column
+        target_index = header.index("target")  # get position of 'target' column
+
+        for row in reader:
+            yield UrlToGeoconnexPid(
+                geoconnex_pid=row[id_index], source_url=row[target_index]
+            )
 
 
-def get_smi():
-    root = ET.fromstring(SITEMAPINDEX)
-    tree = ET.ElementTree(root)
-    try:
-        ET.indent(tree)
-    except AttributeError:
-        LOGGER.warning('Unable to indent')
-    return tree, root
+def write_tree_to_file(tree: ET.ElementTree, file: Path):
+    ET.register_namespace("", "http://www.sitemaps.org/schemas/sitemap/0.9")
+    ET.register_namespace("geoconnex", "https://geoconnex.us")
+    tree.write(file_or_filename=file, encoding="utf-8", xml_declaration=True)
 
 
-def add_smi_node(node, loc, lastmod):
-    _ = SITEMAPINDEX_FOREACH.format(loc, lastmod)
-    node.append(ET.fromstring(_))
+def is_regex_csv(path: Path) -> bool:
+    with open(path) as f:
+        reader = csv.reader(f)
+        _ = next(reader)
+        rows = 0
+        for _ in reader:
+            rows += 1
+            if rows > 5:
+                break
+        return rows < 5
 
 
-def get_urlset():
-    root = ET.fromstring(URLSET)
-    tree = ET.ElementTree(root)
-    try:
-        ET.indent(tree)
-    except AttributeError:
-        LOGGER.warning('Unable to indent')
-    return tree, root
+@dataclass
+class SitemapSourceWithMetadata:
+    path: Path
+    file_type: Literal["regex_csv", "one_to_one_csv", "pregenerated_xml"]
+    last_modified: datetime.datetime
+    metadata: dict
+
+    def canonical_sitemap_name(self, root_relative_dir: Path) -> str:
+        relative_path = self.path.relative_to(root_relative_dir)
+        return (
+            str(relative_path)
+            .replace("/", "_")
+            .replace("-", "_")
+            .removesuffix(".csv")
+            .removesuffix(".xml")
+        )
+
+    def source_to_xml(self, base_uri: str, root_dir: Path) -> ET.Element:
+        sitemap_xml: str = ""
+        last_modified = self.last_modified.isoformat()
+
+        sitemap_xml = f"""<sitemap><loc>{f"{base_uri}/sitemap/{self.canonical_sitemap_name(root_relative_dir=root_dir)}.xml"}</loc><lastmod>{last_modified}</lastmod>"""
+
+        for metadata_key, metadata_value in self.metadata.items():
+            sitemap_xml += f"""<{metadata_key}>{metadata_value}</{metadata_key}>"""
+        sitemap_xml += "</sitemap>"
+
+        try:
+            sitemap_element = ET.fromstring(sitemap_xml)
+        except ET.ParseError as e:
+            raise ValueError(
+                f"Failed to parse sitemap XML: {e} given data {sitemap_xml}"
+            ) from e
+        return sitemap_element
 
 
-def add_urlset_node(node, loc, lastmod):
-    _ = URLSET_FOREACH.format(loc, lastmod)
-    node.append(ET.fromstring(_))
-
-
-def walk_path(path: Path, regex: str) -> Iterator[Path]:
+def get_all_sitemap_sources(root_dir: Path) -> list[SitemapSourceWithMetadata]:
     """
-    Walks os directory path collecting all files.
+    Given a root dir, iterate through it recursively, finding all files
+    ending with *.csv and returning metadata about them. All metadata files
+    are stored in a parallel file named metadata.json in the same directory.
 
-    :param path: required, string. os directory.
+    If there are multiple csv files with one metadata.json, they share the
+    same metadata info
 
-    :returns: list. Iterator of file paths.
+    :param root_dir: `Path` of the root directory to search
+
+    :returns: `list` of `CsvWithMetadata`
     """
-    path = Path(path)
-    reg = re.compile(regex)
-    if path.is_dir():
-        pattern = '**/*'
-        for f in path.glob(pattern):
-            if f.is_file() and reg.match(f.name):
-                yield Path(f)
-    else:
-        yield Path(path)
+    results: list[SitemapSourceWithMetadata] = []
 
+    # Cache metadata per directory so we only read each metadata.json once
+    metadata_cache: dict[Path, dict] = {}
 
-def url_join(*parts):
-    """
-    helper function to join a URL from a number of parts/fragments.
-    Implemented because urllib.parse.urljoin strips subpaths from
-    host urls if they are specified
-    Per https://github.com/geopython/pygeoapi/issues/695
+    for file_path in root_dir.rglob("*.csv"):
+        if file_path.parent not in metadata_cache:
+            metadata_file = file_path.parent / "metadata.json"
+            if metadata_file.exists():
+                metadata_cache[file_path.parent] = json.loads(metadata_file.read_text())
 
-    :param parts: list of parts to join
+        results.append(
+            SitemapSourceWithMetadata(
+                last_modified=datetime.datetime.fromtimestamp(
+                    file_path.stat().st_mtime
+                ),
+                metadata=metadata_cache.get(file_path.parent) or {},
+                path=file_path,
+                file_type="regex_csv" if is_regex_csv(file_path) else "one_to_one_csv",
+            )
+        )
 
-    :returns: str of resulting URL
-    """
-    return '/'.join([str(p).strip().strip('/') for p in parts])
+    for file_path in root_dir.rglob("*.xml"):
+        if file_path.parent not in metadata_cache:
+            metadata_file = file_path.parent / "metadata.json"
+            if metadata_file.exists():
+                metadata_cache[file_path.parent] = json.loads(metadata_file.read_text())
+        results.append(
+            SitemapSourceWithMetadata(
+                last_modified=datetime.datetime.fromtimestamp(
+                    file_path.stat().st_mtime
+                ),
+                metadata=metadata_cache.get(file_path.parent) or {},
+                path=file_path,
+                file_type="pregenerated_xml",
+            )
+        )
 
-
-def parse(filename: Path, n: int = 50000) -> list:
-    """
-    Parses file to a CSV
-
-    :param filename: `Path` of source file to parse
-    :param n: `int` size of each chunk
-
-    :returns: `list`
-    """
-    with filename.open('r') as fh:
-        csv_reader = csv.reader(fh)
-        headers = [h.strip() for h in next(csv_reader)]  # noqa
-        lines = [line for line in csv_reader if line]
-        return chunkify(lines, n)
-
-
-def chunkify(input: list, n: int) -> list:
-    """
-    Breaks a list of strings into chunks.
-
-    :param input: `list` to be chunkified
-    :param n: `int` size of each chunk
-
-    :return: `list` with each sublist length up to the size of n.
-    """
-    return [(input[i:i + n]) for i in range(0, len(input), n)]
+    return results
 
 
 def OPTION_VERBOSITY(f):
-    logging_options = ['ERROR', 'WARNING', 'INFO', 'DEBUG']
-    log_format = \
-        '[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s'
-    date_format = '%Y-%m-%dT%H:%M:%SZ'
+    logging_options = ["ERROR", "WARNING", "INFO", "DEBUG"]
+    log_format = "[%(asctime)s] {%(pathname)s:%(lineno)d} %(levelname)s - %(message)s"
+    date_format = "%Y-%m-%dT%H:%M:%SZ"
 
     def callback(ctx, param, value):
-
         if value is not None:
-            logging.basicConfig(level=value, datefmt=date_format,
-                                format=log_format, stream=sys.stdout)
+            logging.basicConfig(
+                level=value, datefmt=date_format, format=log_format, stream=sys.stdout
+            )
         return True
 
-    return click.option('--verbosity', '-v',
-                        type=click.Choice(logging_options),
-                        help='Verbosity',
-                        default='DEBUG',
-                        callback=callback)(f)
+    return click.option(
+        "--verbosity",
+        "-v",
+        type=click.Choice(logging_options),
+        help="Verbosity",
+        default="DEBUG",
+        callback=callback,
+    )(f)

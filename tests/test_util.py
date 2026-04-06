@@ -31,37 +31,7 @@ from pathlib import Path
 
 from sitemap_generator import util
 
-THIS_DIR = Path(__file__).parent.resolve()
-NAMESPACE = THIS_DIR / 'data' / 'namespaces'
-
-
-def test_walk_path():
-    glob_all = list(util.walk_path(NAMESPACE, r'.*'))
-    assert len(glob_all) >= 2
-
-    glob = util.walk_path(NAMESPACE, r'.*csv')
-    assert len(list(glob)) < len(glob_all)
-
-    glob = util.walk_path(NAMESPACE, r'.*xml')
-    assert len(list(glob)) < len(glob_all)
-
-
-def test_parse_and_chunk():
-    glob = util.walk_path(NAMESPACE / 'ref', r'.*csv')
-    hu08 = next(glob)
-    assert hu08.stem == 'hu08'
-
-    lines = util.parse(hu08)
-    assert len(lines) == 1
-    assert len(lines[-1]) == 2399
-
-    chunks = util.parse(hu08, 1000)
-    assert len(chunks) == 3
-    assert len(chunks[0]) == 1000
-    assert len(chunks[-1]) == 399
-
-    [lines] = util.parse(hu08)
-    chunks = util.chunkify(lines, 100)
-    assert len(chunks) == 24
-    assert len(chunks[0]) == 100
-    assert len(chunks[-1]) == 99
+def test_list_sources():
+    root_dir = Path(__file__).parent / "data"
+    sources = util.get_all_sitemap_sources(root_dir)
+    assert len(sources) == 2
