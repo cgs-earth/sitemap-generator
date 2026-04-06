@@ -43,13 +43,14 @@ LOGGER = logging.getLogger(__name__)
 
 
 class FileSystemHandler:
-    """Sitemap Generator Handler"""
+    """Generate sitemaps from data in the filesystem and write them to disk"""
 
     def generate(
         self, namespace_input_dir: Path, uri_base: str, sitemap_output_dir: Path
     ) -> None:
         """
-        Generate sitemap xml files
+        Generate a sitemap index xml and sitemaps from the input directory
+        and write them to disk in the output directory
 
         :returns: `None`
         """
@@ -82,36 +83,41 @@ class FileSystemHandler:
         self, source: SitemapSourceWithMetadata
     ) -> Optional[ET.ElementTree[ET.Element[str]]]:
         """
-        Given
+        Given a source within the filesystem tree, generate a sitemap XML
+        associated with that source if it is appropriate to include,
+        otherwise return None
         """
-        if source.file_type == "pregenerated_xml":
-            with open(source.path) as f:
-                return ET.parse(f)
-        elif source.file_type == "regex_csv":
-            return None
-        else:
-            URLSET = """<?xml version="1.0"?>
-            <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-            </urlset>
-            """
+        match source.file_type:
+            case "pregenerated_xml":
+                with open(source.path) as f:
+                    return ET.parse(f)
+            case "regex_csv":
+                return None
+            case "one_to_one_csv":
+                URLSET = """<?xml version="1.0"?>
+                <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+                </urlset>
+                """
 
-            URLSET_FOREACH = """
-            <url>
-                <loc>{}</loc>
-                <lastmod>{}</lastmod>
-            </url>
-            """
+                URLSET_FOREACH = """
+                <url>
+                    <loc>{}</loc>
+                    <lastmod>{}</lastmod>
+                </url>
+                """
 
-            xml_root = ET.fromstring(URLSET)
-            tree: ET.ElementTree[ET.Element[str]] = ET.ElementTree(xml_root)
+                xml_root = ET.fromstring(URLSET)
+                tree: ET.ElementTree[ET.Element[str]] = ET.ElementTree(xml_root)
 
-            for mapper in csv_to_sitemap_url_list(source.path):
-                url_element = ET.fromstring(
-                    URLSET_FOREACH.format(mapper.geoconnex_pid, mapper.source_url)
-                )
-                xml_root.append(url_element)
+                for mapper in csv_to_sitemap_url_list(source.path):
+                    url_element = ET.fromstring(
+                        URLSET_FOREACH.format(mapper.geoconnex_pid, mapper.source_url)
+                    )
+                    xml_root.append(url_element)
 
-            return tree
+                return tree
+            case _:
+                raise ValueError(f"Unknown file type: {source.file_type}")
 
     def make_sitemap_index(
         self, base_uri: str, sources: list[SitemapSourceWithMetadata], root_dir: Path
@@ -119,6 +125,7 @@ class FileSystemHandler:
         """
         Builds a sitemap index XML from CSV files and their metadata.
         """
+
         SITEMAPINDEX = """<?xml version="1.0" encoding="UTF-8"?>
         <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
         </sitemapindex>
