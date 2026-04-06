@@ -31,26 +31,29 @@ from datetime import datetime
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
-from sitemap_generator.handler.base import SITEMAP_DIR
 from sitemap_generator.handler.filesystem import FileSystemHandler
 from sitemap_generator.util import walk_path, url_join
-
-THIS_DIR = Path(__file__).parent.resolve()
-NAMESPACE = THIS_DIR / 'data' / 'namespaces'
+from pytest import fixture
 
 URI_STEM = 'https://geoconnex.us'
-HANDLER = FileSystemHandler(str(NAMESPACE), URI_STEM)
 
+@fixture()
+def HANDLER():
+    THIS_DIR = Path(__file__).parent.resolve()
+    NAMESPACE = THIS_DIR / 'data' / 'namespaces'
 
-def test_handler():
+    return FileSystemHandler(
+        NAMESPACE, URI_STEM, sitemap_output_dir=Path("/tmp/sitemaps")
+    )
+
+def test_handler(HANDLER: FileSystemHandler):
     HANDLER.handle()
-    glob = list(walk_path(SITEMAP_DIR, r'.*'))
-    glob1 = list(walk_path(SITEMAP_DIR, r'.*xml'))
-    assert len(glob) == len(glob1)
+    output_files = list(walk_path(HANDLER.sitemap_output_dir, r'.*'))
+    assert len(output_files) == 3
 
 
-def test_sitemapindex():
-    [sitemapindex] = list(walk_path(SITEMAP_DIR, r'.*_sitemap.xml'))
+def test_sitemapindex(HANDLER: FileSystemHandler):
+    [sitemapindex] = list(walk_path(HANDLER.sitemap_output_dir, r".*_sitemap.xml"))
     assert sitemapindex.name == '_sitemap.xml'
     assert HANDLER.get_rel_path(sitemapindex) == '.'
 
@@ -68,8 +71,8 @@ def test_sitemapindex():
     assert all(URI_STEM in ''.join(child.itertext()) for child in root)
 
 
-def test_urlset():
-    [urlset] = list(walk_path(SITEMAP_DIR, r'.*links__0.xml'))
+def test_urlset(HANDLER: FileSystemHandler):
+    [urlset] = list(walk_path(HANDLER.sitemap_output_dir, r".*links__0.xml"))
     assert urlset.name == 'links__0.xml'
     assert HANDLER.get_rel_path(urlset) == 'iow'
 

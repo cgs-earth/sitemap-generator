@@ -41,23 +41,52 @@ from sitemap_generator.util import (url_join, get_smi, add_smi_node,
 LOGGER = logging.getLogger(__name__)
 
 
-# Sitemap directory objects
-SITEMAP_DIR = Path(os.environ.get('SITEMAP_DIR', '/sitemap'))
-
-
 class BaseHandler:
     """Sitemap Generator Handler"""
 
-    def __init__(self, filepath: Path, uri_stem: str) -> None:
+    sitemap_output_dir: Path
+
+    def __init__(
+        self,
+        filepath: Path,
+        uri_stem: str,
+        sitemap_output_dir: Path,
+    ) -> None:
         """
         Sitemap handler initializer
 
         :param filepath: `Path` of filepath to handle
         :param uri_stem: `str` of sitemap location
+        :param sitemap_output_dir: `Path` in which the generated xml will be stored
 
         :returns: `None`
         """
-        self.root_path = filepath
+        sitemap_dir_env = os.environ.get('SITEMAP_DIR')
+        
+        match (sitemap_output_dir, sitemap_dir_env):
+            case (None, None) as _USE_DEFAULT_FALLBACK:
+                self.sitemap_output_dir = Path(__file__).parent.parent
+            case (None, _) as _USE_SITEMAP_DIR_ENV:
+                self.sitemap_output_dir = Path(sitemap_output_dir)
+            case (_, None) as _USE_SITEMAP_OUTPUT_DIR:
+                self.sitemap_output_dir = sitemap_output_dir
+
+        input_dir_env = os.environ.get("SOURCE_REPO_PATH")
+
+        match (input_dir_env, filepath):
+            case (None, None) as _USE_DEFAULT_FALLBACK:
+                self.repo = Path(__file__).parent.parent.parent / "geoconnex.us" / "namespaces"
+            case (None, _) as _USE_FILEPATH:
+                self.repo = filepath
+            case (_, _) as _USE_ENV:
+                assert input_dir_env, "SOURCE_REPO_PATH environment variable not set;"
+                " this must be set to the relative dir of a local git repository in order to generate sitemaps"
+                self.repo = Path(input_dir_env)
+        
+        assert self.repo.is_dir(), (
+            f"{self.repo=} must be a directory that exists"
+        )
+
         self.uri_stem = uri_stem
 
     def handle(self) -> None:
@@ -68,7 +97,7 @@ class BaseHandler:
         """
         raise NotImplementedError
 
-    def parse(self) -> None:
+    def parse(self, filename: Path, n: int = 50000) -> list:
         """
         Parse sitemap creation sitemapindex
 
@@ -148,7 +177,7 @@ class BaseHandler:
                 continue
 
             # Move xml to /sitemaps
-            filepath = (SITEMAP_DIR / self.get_rel_path(f))
+            filepath = (self.sitemap_output_dir / self.get_rel_path(f))
             filepath.mkdir(parents=True, exist_ok=True)
             file_path = filepath / f.name
             LOGGER.debug(f'Copying urlset to {filepath}')
@@ -159,6 +188,6 @@ class BaseHandler:
             url_ = url_join(self.uri_stem, file_path)
             add_smi_node(root, url_, file_time)
 
-        sitemap_out = SITEMAP_DIR / '_sitemap.xml'
+        sitemap_out = self.sitemap_output_dir / '_sitemap.xml'
         LOGGER.debug(f'Writing sitemapindex to {sitemap_out}')
         write_tree(tree, sitemap_out)
