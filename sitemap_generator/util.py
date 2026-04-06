@@ -97,23 +97,34 @@ class SitemapSourceWithMetadata:
             .removesuffix(".xml")
         )
 
-    def source_to_xml(self, base_uri: str, root_dir: Path) -> ET.Element:
-        sitemap_xml: str = ""
+    def source_to_xml_for_index(self, base_uri: str, root_dir: Path) -> ET.Element:
+        SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
+        GEOCONNEX_NS = "https://geoconnex.us"
         last_modified = self.last_modified.isoformat()
 
-        sitemap_xml = f"""<sitemap><loc>{f"{base_uri}/sitemap/{self.canonical_sitemap_name(root_relative_dir=root_dir)}.xml"}</loc><lastmod>{last_modified}</lastmod>"""
+        # Root element with namespaces
+        sitemap_el = ET.Element(
+            f"{{{SITEMAP_NS}}}sitemap",
+            {
+                "xmlns": SITEMAP_NS,
+                "xmlns:geoconnex": GEOCONNEX_NS,
+            },
+        )
 
-        for metadata_key, metadata_value in self.metadata.items():
-            sitemap_xml += f"""<{metadata_key}>{metadata_value}</{metadata_key}>"""
-        sitemap_xml += "</sitemap>"
+        # loc
+        loc = ET.SubElement(sitemap_el, f"{{{SITEMAP_NS}}}loc")
+        loc.text = f"{base_uri}/sitemap/{self.canonical_sitemap_name(root_relative_dir=root_dir)}.xml"
 
-        try:
-            sitemap_element = ET.fromstring(sitemap_xml)
-        except ET.ParseError as e:
-            raise ValueError(
-                f"Failed to parse sitemap XML: {e} given data {sitemap_xml}"
-            ) from e
-        return sitemap_element
+        # lastmod
+        lastmod = ET.SubElement(sitemap_el, f"{{{SITEMAP_NS}}}lastmod")
+        lastmod.text = last_modified
+
+        # metadata fields (safe escaping handled automatically)
+        for key, value in self.metadata.items():
+            el = ET.SubElement(sitemap_el, f"{{{GEOCONNEX_NS}}}{key}")
+            el.text = "" if value is None else str(value)
+
+        return sitemap_el
 
 
 def get_all_sitemap_sources(root_dir: Path) -> list[SitemapSourceWithMetadata]:

@@ -66,7 +66,8 @@ class FileSystemHandler:
 
         for source in sources:
             tree = self.make_sitemap(source)
-            if not tree:
+            skip_including_in_sitemap_index = not tree
+            if skip_including_in_sitemap_index:
                 continue
             output_path = (
                 sitemap_output_dir
@@ -93,6 +94,7 @@ class FileSystemHandler:
             <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
             </urlset>
             """
+
             URLSET_FOREACH = """
             <url>
                 <loc>{}</loc>
@@ -131,7 +133,7 @@ class FileSystemHandler:
             # only the pregenerated xml that is associated with them
             if src.file_type == "regex_csv":
                 continue
-            sitemap_element = src.source_to_xml(base_uri, root_dir)
+            sitemap_element = src.source_to_xml_for_index(base_uri, root_dir)
             xml_root.append(sitemap_element)
 
         return tree
