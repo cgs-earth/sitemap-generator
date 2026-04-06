@@ -47,7 +47,7 @@ def HANDLER():
     )
 
 def test_handler(HANDLER: FileSystemHandler):
-    HANDLER.handle()
+    HANDLER.generate()
     output_files = list(walk_path(HANDLER.sitemap_output_dir, r'.*'))
     assert len(output_files) == 3
 

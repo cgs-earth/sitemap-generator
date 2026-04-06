@@ -38,21 +38,22 @@ LOGGER = logging.getLogger(__name__)
 
 class FileSystemHandler(BaseHandler):
     def __init__(
-        self, input_dir: Path, uri_stem: str, sitemap_output_dir: Path
+        self, namespace_dir: Path, uri_stem: str, sitemap_output_dir: Path
     ) -> None:
         """
         Sitemap handler initializer
 
-        :param input_dir: `Path` of filepath to handle
+        :param input_dir: `Path` of input directory with the namespaces
         :param uri_stem: `str` of sitemap location
+        :param sitemap_output_dir: `Path` in which the generated xml will be stored
 
         :returns: `None`
         """
-        super().__init__(input_dir, uri_stem, sitemap_output_dir)
+        super().__init__(namespace_dir, uri_stem, sitemap_output_dir)
 
-    def handle(self) -> None:
+    def generate(self) -> None:
         """
-        Handle sitemap creation sitemapindex
+        Generate sitemap xml files
 
         :returns: `None`
         """

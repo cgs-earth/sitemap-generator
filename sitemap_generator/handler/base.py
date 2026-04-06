@@ -48,14 +48,14 @@ class BaseHandler:
 
     def __init__(
         self,
-        filepath: Path,
+        namespace_dir: Path,
         uri_stem: str,
         sitemap_output_dir: Path,
     ) -> None:
         """
         Sitemap handler initializer
 
-        :param filepath: `Path` of filepath to handle
+        :param namespace_dir: `Path` of input directory to use for generation
         :param uri_stem: `str` of sitemap location
         :param sitemap_output_dir: `Path` in which the generated xml will be stored
 
@@ -73,11 +73,11 @@ class BaseHandler:
 
         input_dir_env = os.environ.get("SOURCE_REPO_PATH")
 
-        match (input_dir_env, filepath):
+        match (input_dir_env, namespace_dir):
             case (None, None) as _USE_DEFAULT_FALLBACK:
                 self.repo = Path(__file__).parent.parent.parent / "geoconnex.us" / "namespaces"
             case (None, _) as _USE_FILEPATH:
-                self.repo = filepath
+                self.repo = namespace_dir
             case (_, _) as _USE_ENV:
                 assert input_dir_env, "SOURCE_REPO_PATH environment variable not set;"
                 " this must be set to the relative dir of a local git repository in order to generate sitemaps"
@@ -89,7 +89,7 @@ class BaseHandler:
 
         self.uri_stem = uri_stem
 
-    def handle(self) -> None:
+    def generate(self) -> None:
         """
         Handle sitemap creation sitemapindex
 
