@@ -29,6 +29,7 @@
 
 import datetime
 from pathlib import Path
+from xml.etree import ElementTree
 
 from sitemap_generator.handler.base import FileSystemHandler
 from pytest import fixture
@@ -41,12 +42,32 @@ import tempfile
 def handler():
     return FileSystemHandler()
 
+
 def test_sitemap_index_generation(handler):
     sources = get_all_sitemap_sources(Path(__file__).parent / "data")
     for source in sources:
         assert source.metadata
-    tree= handler.make_sitemap_index("https://geoconnex.us", sources, Path(__file__).parent / "data")
+    tree: ElementTree.ElementTree = handler.make_sitemap_index(
+        "https://geoconnex.us", sources, Path(__file__).parent / "data"
+    )
 
+    for elem in tree.iter():
+        if elem.tag is ElementTree.Comment or elem.tag is ElementTree.PI:
+            continue
+
+        # skip root element (sitemapindex)
+        if elem.tag.endswith("sitemapindex"):
+            continue
+
+        # only validate sitemap entries
+        if elem.tag.endswith("sitemap"):
+            assert elem.find("{*}loc") is not None, f"Missing loc in {elem.tag}"
+            assert elem.find("{*}lastmod") is not None, (
+                f"Missing lastModified in {elem.tag}"
+            )
+            assert elem.find("{*}contact_email") is not None, (
+                f"Missing contact_email in {elem.tag}"
+            )
     tmpFile = tempfile.NamedTemporaryFile()
     write_tree_to_file(tree, Path(tmpFile.name))
     assert Path(tmpFile.name).exists()

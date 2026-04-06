@@ -125,6 +125,10 @@ class FileSystemHandler:
         assert isinstance(tree, ET.ElementTree)
 
         for src in sources:
+            # regex csvs shouldnt be a part of the sitemap,
+            # only the pregenerated xml that is associated with them
+            if src.file_type == "regex_csv":
+                continue
             sitemap_element = src.source_to_xml(base_uri, root_dir)
             xml_root.append(sitemap_element)
 
