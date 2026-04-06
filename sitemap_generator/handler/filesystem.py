@@ -39,7 +39,7 @@ from sitemap_generator.util import walk_path, parse
 LOGGER = logging.getLogger(__name__)
 
 # Environment Vars for Git Repository to source last mod
-SOURCE_REPO = os.environ.get('SOURCE_REPO', '/geoconnex.us')
+SOURCE_REPO = os.environ.get('SOURCE_REPO', Path(__file__).parent.parent.parent / 'geoconnex.us')
 SOURCE_REPO_PATH = os.environ.get('SOURCE_REPO_PATH', 'namespaces')
 
 

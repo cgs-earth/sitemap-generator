@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sitemap-generator"
+dynamic = ["version"]
+
+description = "Sitemap generator provides a python interface to generate sitemap XML files."
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+authors = [
+    { name = "Ben Webb", email = "bwebb@lincolninst.edu" }
+]
+maintainers = [
+    { name = "Ben Webb", email = "bwebb@lincolninst.edu" }
+]
+
+keywords = ["sitemap", "cgs", "internetofwater"]
+
+classifiers = [
+    "Development Status :: 1 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+    "Topic :: Scientific/Engineering :: GIS",
+    "Topic :: Scientific/Engineering :: Information Analysis"
+]
+
+dependencies = [
+    "click>=8.3.1",
+    "gitpython>=3.1.46"
+]
+
+[project.urls]
+Homepage = "https://github.com/cgs-earth/sitemap-generator"
+Source = "https://github.com/cgs-earth/sitemap-generator"
+Issues = "https://github.com/cgs-earth/sitemap-generator/issues"
+
+[project.scripts]
+sitemap-generator = "sitemap_generator:cli"
+
+[project.optional-dependencies]
+dev = [
+    "flake8>=7.3.0",
+    "pytest>=9.0.2"
+]
+
+# setuptools-specific config
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.setuptools.dynamic]
+version = { attr = "sitemap_generator.__version__" }

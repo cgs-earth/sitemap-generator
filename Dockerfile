@@ -1,20 +1,34 @@
-FROM python:3.9.13-slim
+# Use a Python image with uv pre-installed
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
 
-COPY . /build/
-WORKDIR /build
+# Install the project into `/app`
+WORKDIR /app
 
-RUN \
-    # Install dependencies
-    apt-get update -y \
-    && apt-get upgrade -y \
-    && apt-get install -y git \
-    && git clone -b master https://github.com/internetofwater/geoconnex.us.git /geoconnex.us \
-    # Install sitemap-generator
-    && pip3 install -e . \
-    # cleanup
-    && apt autoremove -y  \
-    && apt-get -q clean \
-    && rm -rf /var/lib/apt/lists/*
+# Enable bytecode compilation
+ENV UV_COMPILE_BYTECODE=1
 
-ENTRYPOINT [ "sitemap-generator", "run" ]
-CMD [ "/build/tests/data/namespaces" ]
+# Copy from the cache instead of linking since it's a mounted volume
+ENV UV_LINK_MODE=copy
+
+# Omit development dependencies
+ENV UV_NO_DEV=1
+
+# install git cli 
+RUN apt-get update && apt-get install -y git
+
+# Install the project's dependencies using the lockfile and settings
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project
+
+# Then, add the rest of the project source code and install it
+# Installing separately from its dependencies allows optimal layer caching
+COPY . /app
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
+
+# Place executables in the environment at the front of the path
+ENV PATH="/app/.venv/bin:$PATH"
+
+ENTRYPOINT ["uv", "run", "sitemap-generator"]
