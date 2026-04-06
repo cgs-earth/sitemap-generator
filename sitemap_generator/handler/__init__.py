@@ -27,7 +27,7 @@
 #
 # =================================================================
 
-'''Handler classs'''
+"""Handler classs"""
 
 import click
 from pathlib import Path
@@ -40,17 +40,28 @@ from sitemap_generator.util import OPTION_VERBOSITY
 @click.pass_context
 @OPTION_VERBOSITY
 @click.argument("namespace_input_dir", type=click.Path())
-@click.option('-u', '--uri_base', type=str, default='https://geoconnex.us',
-              help='uri stem to be removed from short url for keyword')
-@click.option('-o', '--sitemap_output_dir', type=click.Path(), default=Path("/tmp/sitemaps"))
+@click.option(
+    "-u",
+    "--uri_base",
+    type=str,
+    default="https://geoconnex.us",
+    help="uri stem to be removed from short url for keyword",
+)
+@click.option(
+    "-o", "--sitemap_output_dir", type=click.Path(), default=Path("/tmp/sitemaps")
+)
 def run(
     ctx, verbosity, namespace_input_dir: Path, uri_base: str, sitemap_output_dir: Path
 ):
     namespace_dir = Path(namespace_input_dir)
     assert namespace_dir.is_dir(), f"{namespace_dir=} must be a directory"
     handler = FileSystemHandler()
-    handler.generate(namespace_input_dir=Path(namespace_input_dir), uri_base= uri_base,sitemap_output_dir=Path(sitemap_output_dir))
+    handler.generate(
+        namespace_input_dir=Path(namespace_input_dir),
+        uri_base=uri_base,
+        sitemap_output_dir=Path(sitemap_output_dir),
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()

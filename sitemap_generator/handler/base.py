@@ -68,8 +68,10 @@ class FileSystemHandler:
             tree = self.make_sitemap(source)
             if not tree:
                 continue
-            output_path = sitemap_output_dir / "sitemap" / source.canonical_sitemap_name(
-                root_relative_dir=namespace_input_dir
+            output_path = (
+                sitemap_output_dir
+                / "sitemap"
+                / source.canonical_sitemap_name(root_relative_dir=namespace_input_dir)
             )
             Path.mkdir(output_path.parent, parents=True, exist_ok=True)
             tree.write(output_path, encoding="utf-8", xml_declaration=True)
@@ -77,7 +79,7 @@ class FileSystemHandler:
 
     def make_sitemap(
         self, source: SitemapSourceWithMetadata
-    ) -> Optional[ET.ElementTree]:
+    ) -> Optional[ET.ElementTree[ET.Element[str]]]:
         """
         Given
         """
@@ -99,7 +101,7 @@ class FileSystemHandler:
             """
 
             xml_root = ET.fromstring(URLSET)
-            tree = ET.ElementTree(xml_root)
+            tree: ET.ElementTree[ET.Element[str]] = ET.ElementTree(xml_root)
 
             for mapper in csv_to_sitemap_url_list(source.path):
                 url_element = ET.fromstring(

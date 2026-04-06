@@ -31,6 +31,7 @@ from pathlib import Path
 
 from sitemap_generator import util
 
+
 def test_list_sources():
     root_dir = Path(__file__).parent / "data"
     sources = util.get_all_sitemap_sources(root_dir)

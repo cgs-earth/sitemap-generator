@@ -1,4 +1,9 @@
 <?xml version='1.0' encoding='utf-8'?>
+<!--
+ Copyright 2026 Lincoln Institute of Land Policy
+ SPDX-License-Identifier: MIT
+-->
+
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
     <loc>https://geoconnex.us/iow/homepage</loc>

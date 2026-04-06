@@ -27,11 +27,9 @@
 #
 # =================================================================
 
-from curses.ascii import SI
 from dataclasses import dataclass
 import datetime
-from operator import le
-from typing import Generator, Literal, NamedTuple, Optional, Tuple
+from typing import Generator, Literal, NamedTuple
 
 import click
 import csv

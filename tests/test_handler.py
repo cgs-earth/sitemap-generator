@@ -27,7 +27,6 @@
 #
 # =================================================================
 
-import datetime
 from pathlib import Path
 from xml.etree import ElementTree
 
