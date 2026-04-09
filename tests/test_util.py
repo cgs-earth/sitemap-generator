@@ -33,6 +33,16 @@ from sitemap_generator import util
 
 
 def test_list_sources():
-    root_dir = Path(__file__).parent / "data"
+    root_dir = Path(__file__).parent / "data" / "namespaces"
     sources = util.get_all_sitemap_sources(root_dir)
-    assert len(sources) == 3
+    assert len(sources) == 3, (
+        "There should be exactly 3 sources since there are 3 files in the namespaces directory"
+    )
+
+    root_dir_without_metadata = (
+        Path(__file__).parent / "data" / "namespaces_with_missing_metadata"
+    )
+    sources = util.get_all_sitemap_sources(root_dir_without_metadata)
+    assert len(sources) == 2, (
+        "There should be exactly 2 sources since there are 2 files in the namespaces with missing metadata directory"
+    )

@@ -43,11 +43,21 @@ def handler():
 
 
 def test_sitemap_index_generation(handler):
-    sources = get_all_sitemap_sources(Path(__file__).parent / "data")
+    sources = get_all_sitemap_sources(Path(__file__).parent / "data" / "namespaces")
     for source in sources:
-        assert source.metadata
+        assert source.metadata, (
+            f"Sitemap source for file {source.path.name} has no metadata"
+        )
     tree: ElementTree.ElementTree = handler.make_sitemap_index(
         "https://geoconnex.us", sources, Path(__file__).parent / "data"
+    )
+
+    sources_to_crawl = len(
+        [src for src in sources if not src.metadata.get("skip_crawl")]
+    )
+    sitemaps_in_index = len(tree.findall("{*}sitemap"))
+    assert sources_to_crawl == sitemaps_in_index, (
+        f"There should be one sitemap per source but got {sitemaps_in_index=} and {sources_to_crawl=}"
     )
 
     for elem in tree.iter():
@@ -74,3 +84,43 @@ def test_sitemap_index_generation(handler):
     written_data = Path(tmpFile.name).read_text()
     assert "hu08" in written_data
     assert "contact_email" in written_data
+
+
+def test_sitemap_index_generation_with_missing_metadata(handler):
+    sources = get_all_sitemap_sources(
+        Path(__file__).parent / "data" / "namespaces_with_missing_metadata"
+    )
+    tree: ElementTree.ElementTree = handler.make_sitemap_index(
+        "https://geoconnex.us", sources, Path(__file__).parent / "data"
+    )
+
+    for elem in tree.iter():
+        if elem.tag is ElementTree.Comment or elem.tag is ElementTree.PI:
+            continue
+
+        # skip root element (sitemapindex)
+        if elem.tag.endswith("sitemapindex"):
+            continue
+
+        if elem.tag.endswith("sitemap"):
+            loc = elem.find("{*}loc")
+            lastmod = elem.find("{*}lastmod")
+
+            assert loc is not None, f"Missing loc in sitemap {elem.tag}"
+            assert lastmod is not None, f"Missing lastModified in sitemap {elem.tag}"
+
+            # test_hu08 should have a contact_email
+            locText = loc.text
+            assert locText, f"Missing loc text in sitemap with loc {loc.text}"
+            if loc is not None and "hu08" in locText:
+                assert elem.find("{*}contact_email") is not None, (
+                    f"Missing contact_email in sitemap with loc {loc.text}"
+                )
+            else:
+                assert elem.find("{*}contact_email") is None, (
+                    f"Unexpected contact_email in sitemap with loc {loc.text}"
+                )
+
+    tmpFile = tempfile.NamedTemporaryFile()
+    write_tree_to_file(tree, Path(tmpFile.name))
+    assert Path(tmpFile.name).exists()
