@@ -89,13 +89,15 @@ class SitemapSourceWithMetadata:
     metadata: dict
 
     def canonical_sitemap_name(self, root_relative_dir: Path) -> str:
-        relative_path = self.path.relative_to(root_relative_dir)
-        return (
-            str(relative_path)
-            .replace("-", "_")
-            .removesuffix(".csv")
-            .removesuffix(".xml")
+        cleaned_path = (
+            self.path.relative_to(root_relative_dir)
+            .with_suffix("")  # remove suffix
         )
+
+        if cleaned_path.name == cleaned_path.parent.name:
+            cleaned_path = cleaned_path.parent
+
+        return cleaned_path.as_posix().replace("-", "_")
 
     def source_to_xml_for_index(self, base_uri: str, root_dir: Path) -> ET.Element:
         SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
