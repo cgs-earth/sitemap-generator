@@ -48,12 +48,6 @@ repos:
     hooks:
       - id: addlicense
         args: ["-s=only", -l, "MIT", -c, "Lincoln Institute of Land Policy"]
-  - repo: https://github.com/RobertCraigie/pyright-python
-    rev: v1.1.408
-    hooks:
-    - id: pyright
-      additional_dependencies:
-        - pyright[nodejs]
   - repo: local
     hooks: 
       - id: pytest
