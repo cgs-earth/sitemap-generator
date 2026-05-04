@@ -86,12 +86,14 @@ class FileSystemHandler:
             skip_including_in_sitemap_index = not tree
             if skip_including_in_sitemap_index:
                 continue
+
+            sitemap_location = source.canonical_sitemap_name(namespace_input_dir)
             output_path = (
                 sitemap_output_dir
                 / "sitemap"
-                / source.canonical_sitemap_name(root_relative_dir=namespace_input_dir)
-            )
-            Path.mkdir(output_path.parent, parents=True, exist_ok=True)
+                / sitemap_location
+            ).with_suffix(".xml")
+            output_path.parent.mkdir(parents=True, exist_ok=True)
             tree.write(output_path, encoding="utf-8", xml_declaration=True)
             LOGGER.info(f"Wrote {output_path} to disk")
 
