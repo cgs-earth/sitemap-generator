@@ -30,7 +30,7 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any
 from xml.etree import ElementTree as ET
 
 from sitemap_generator.util import (
@@ -93,9 +93,7 @@ class FileSystemHandler:
         write_tree_to_file(index, sitemap_output_dir / "sitemap.xml")
         LOGGER.info(f"Wrote sitemap index to disk at {sitemap_output_dir}/sitemap.xml")
 
-    def make_sitemap(
-        self, source: SitemapSourceWithMetadata
-    ) -> Optional[ET.ElementTree[ET.Element[str]]]:
+    def make_sitemap(self, source: SitemapSourceWithMetadata) -> ET.ElementTree | Any:
         """
         Given a source within the filesystem tree, generate a sitemap XML
         associated with that source if it is appropriate to include,
@@ -109,7 +107,7 @@ class FileSystemHandler:
                 return None
             case "one_to_one_csv":
                 xml_root = ET.fromstring(URLSET)
-                tree: ET.ElementTree[ET.Element[str]] = ET.ElementTree(xml_root)
+                tree = ET.ElementTree(xml_root)
 
                 for mapper in csv_to_sitemap_url_list(source.path):
                     url_element = ET.fromstring(
