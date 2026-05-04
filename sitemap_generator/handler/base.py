@@ -93,9 +93,7 @@ class FileSystemHandler:
         write_tree_to_file(index, sitemap_output_dir / "sitemap.xml")
         LOGGER.info(f"Wrote sitemap index to disk at {sitemap_output_dir}/sitemap.xml")
 
-    def make_sitemap(
-        self, source: SitemapSourceWithMetadata
-    ) -> ET.ElementTree | Any:
+    def make_sitemap(self, source: SitemapSourceWithMetadata) -> ET.ElementTree | Any:
         """
         Given a source within the filesystem tree, generate a sitemap XML
         associated with that source if it is appropriate to include,
