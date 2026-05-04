@@ -1,3 +1,6 @@
+# Copyright 2026 Lincoln Institute of Land Policy
+# SPDX-License-Identifier: MIT
+
 # Use a Python image with uv pre-installed
 FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
 
@@ -12,9 +15,6 @@ ENV UV_LINK_MODE=copy
 
 # Omit development dependencies
 ENV UV_NO_DEV=1
-
-# install git cli 
-RUN apt-get update && apt-get install -y git
 
 # Install the project's dependencies using the lockfile and settings
 RUN --mount=type=cache,target=/root/.cache/uv \
