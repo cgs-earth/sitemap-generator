@@ -74,6 +74,7 @@ def test_sitemap_index_generation(handler):
             assert elem.find("{*}lastmod") is not None, (
                 f"Missing lastModified in {elem.tag}"
             )
+            assert elem.find("{*}sitemap_id") is not None, f"Missing sitemap_id in {elem.tag}"
             assert elem.find("{*}contact_email") is not None, (
                 f"Missing contact_email in {elem.tag}"
             )
