@@ -1,8 +1,9 @@
 # =================================================================
 #
 # Authors: Benjamin Webb <bwebb@lincolninst.edu>
+#          Colton Loftus <cloftus@lincolninst.edu>
 #
-# Copyright (c) 2023 Benjamin Webb
+# Copyright (c) 2026 Lincoln Institute of Land Policy
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
