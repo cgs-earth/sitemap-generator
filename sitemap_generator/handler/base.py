@@ -36,6 +36,7 @@ from sitemap_generator.util import (
     SitemapSourceWithMetadata,
     csv_to_sitemap_url_list,
     get_all_sitemap_sources,
+    write_tree_to_file
 )
 
 
@@ -72,15 +73,6 @@ class FileSystemHandler:
         """
         sources = get_all_sitemap_sources(namespace_input_dir)
 
-        index = self.make_sitemap_index(
-            base_uri=uri_base, sources=sources, root_dir=namespace_input_dir
-        )
-        Path.mkdir(sitemap_output_dir, parents=True, exist_ok=True)
-        index.write(
-            sitemap_output_dir / "sitemap.xml", encoding="utf-8", xml_declaration=True
-        )
-        LOGGER.info(f"Wrote sitemap index to disk at {sitemap_output_dir}/sitemap.xml")
-
         for source in sources:
             tree = self.make_sitemap(source)
             skip_including_in_sitemap_index = not tree
@@ -94,8 +86,14 @@ class FileSystemHandler:
                 / sitemap_location
             ).with_suffix(".xml")
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            tree.write(output_path, encoding="utf-8", xml_declaration=True)
+            write_tree_to_file(tree, output_path)
             LOGGER.info(f"Wrote {output_path} to disk")
+
+        index = self.make_sitemap_index(
+            base_uri=uri_base, sources=sources, root_dir=namespace_input_dir
+        )
+        write_tree_to_file(index, sitemap_output_dir / "sitemap.xml")
+        LOGGER.info(f"Wrote sitemap index to disk at {sitemap_output_dir}/sitemap.xml")
 
     def make_sitemap(
         self, source: SitemapSourceWithMetadata
