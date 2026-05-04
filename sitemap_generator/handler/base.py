@@ -82,9 +82,7 @@ class FileSystemHandler:
                 continue
 
             sitemap_location = source.canonical_sitemap_name(namespace_input_dir)
-            output_path = (
-                sitemap_output_dir / "sitemap" / sitemap_location
-            )
+            output_path = sitemap_output_dir / "sitemap" / sitemap_location
             output_path.parent.mkdir(parents=True, exist_ok=True)
             write_tree_to_file(tree, output_path.with_suffix(".xml"))
             LOGGER.info(f"Wrote {output_path} to disk")
@@ -96,8 +94,8 @@ class FileSystemHandler:
         LOGGER.info(f"Wrote sitemap index to disk at {sitemap_output_dir}/sitemap.xml")
 
     def make_sitemap(
-            self, source: SitemapSourceWithMetadata
-        ) -> Optional[ET.ElementTree[ET.Element[str]]]:
+        self, source: SitemapSourceWithMetadata
+    ) -> Optional[ET.ElementTree[ET.Element[str]]]:
         """
         Given a source within the filesystem tree, generate a sitemap XML
         associated with that source if it is appropriate to include,
