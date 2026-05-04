@@ -30,7 +30,7 @@
 
 from dataclasses import dataclass
 import datetime
-from typing import Generator, Literal, NamedTuple
+from typing import Generator, Literal, NamedTuple, Any
 
 import click
 import csv
@@ -63,7 +63,7 @@ def csv_to_sitemap_url_list(csv_path: Path) -> Generator[UrlToGeoconnexPid, None
             )
 
 
-def write_tree_to_file(tree: ET.ElementTree | ET.ElementTree[ET.Element], file: Path):
+def write_tree_to_file(tree: ET.ElementTree | Any, file: Path):
     ET.register_namespace("", "http://www.sitemaps.org/schemas/sitemap/0.9")
     ET.register_namespace("geoconnex", "https://geoconnex.us")
     tree.write(file_or_filename=file, encoding="utf-8", xml_declaration=True)
