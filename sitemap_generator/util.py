@@ -90,8 +90,7 @@ class SitemapSourceWithMetadata:
 
     def canonical_sitemap_name(self, root_relative_dir: Path) -> str:
         cleaned_path = (
-            self.path.relative_to(root_relative_dir)
-            .with_suffix("")  # remove suffix
+            self.path.relative_to(root_relative_dir).with_suffix("")  # remove suffix
         )
 
         if cleaned_path.name == cleaned_path.parent.name:
