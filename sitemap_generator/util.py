@@ -1,8 +1,9 @@
 # =================================================================
 #
 # Authors: Benjamin Webb <bwebb@lincolninst.edu>
+#          Colton Loftus <cloftus@lincolninst.edu>
 #
-# Copyright (c) 2023 Benjamin Webb
+# Copyright (c) 2026 Lincoln Institute of Land Policy
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -62,7 +63,7 @@ def csv_to_sitemap_url_list(csv_path: Path) -> Generator[UrlToGeoconnexPid, None
             )
 
 
-def write_tree_to_file(tree: ET.ElementTree, file: Path):
+def write_tree_to_file(tree: ET.ElementTree | ET.ElementTree[ET.Element], file: Path):
     ET.register_namespace("", "http://www.sitemaps.org/schemas/sitemap/0.9")
     ET.register_namespace("geoconnex", "https://geoconnex.us")
     tree.write(file_or_filename=file, encoding="utf-8", xml_declaration=True)
@@ -91,7 +92,6 @@ class SitemapSourceWithMetadata:
         relative_path = self.path.relative_to(root_relative_dir)
         return (
             str(relative_path)
-            .replace("/", "_")
             .replace("-", "_")
             .removesuffix(".csv")
             .removesuffix(".xml")
@@ -105,19 +105,21 @@ class SitemapSourceWithMetadata:
         # Root element with namespaces
         sitemap_el = ET.Element(
             f"{{{SITEMAP_NS}}}sitemap",
-            {
-                "xmlns": SITEMAP_NS,
-                "xmlns:geoconnex": GEOCONNEX_NS,
-            },
         )
+        ET.indent(sitemap_el, space=" ", level=0)
+        sitemap_location = self.canonical_sitemap_name(root_relative_dir=root_dir)
 
         # loc
         loc = ET.SubElement(sitemap_el, f"{{{SITEMAP_NS}}}loc")
-        loc.text = f"{base_uri}/sitemap/{self.canonical_sitemap_name(root_relative_dir=root_dir)}.xml"
+        loc.text = f"{base_uri}/sitemap/{sitemap_location}.xml"
 
         # lastmod
         lastmod = ET.SubElement(sitemap_el, f"{{{SITEMAP_NS}}}lastmod")
         lastmod.text = last_modified
+
+        # sitemap_id
+        sitemap_id = ET.SubElement(sitemap_el, f"{{{GEOCONNEX_NS}}}sitemap_id")
+        sitemap_id.text = sitemap_location.replace("/", ":")
 
         # metadata fields (safe escaping handled automatically)
         for key, value in self.metadata.items():
