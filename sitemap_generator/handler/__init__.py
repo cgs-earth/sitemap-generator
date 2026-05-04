@@ -48,7 +48,11 @@ from sitemap_generator.util import OPTION_VERBOSITY
     help="uri stem to be removed from short url for keyword",
 )
 @click.option(
-    "-o", "--sitemap_output_dir", type=click.Path(), default=Path("/tmp/sitemaps")
+    "-o",
+    "--sitemap_output_dir",
+    type=click.Path(),
+    envvar='SITEMAP_DIR',
+    default=Path("/tmp/sitemaps")
 )
 def run(
     ctx, verbosity, namespace_input_dir: Path, uri_base: str, sitemap_output_dir: Path

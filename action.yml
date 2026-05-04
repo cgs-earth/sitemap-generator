@@ -60,8 +60,6 @@ runs:
   steps:
     - shell: bash
       env:
-        SOURCE_REPO: ${{ inputs.source_repo }}
-        SOURCE_REPO_PATH: ${{ inputs.source_repo_path }}
         SITEMAP_DIR: ${{ inputs.sitemap_dir }}
       run: |
         pip3 install git+https://github.com/cgs-earth/sitemap-generator.git
