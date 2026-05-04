@@ -82,9 +82,9 @@ class FileSystemHandler:
                 continue
 
             sitemap_location = source.canonical_sitemap_name(namespace_input_dir)
-            output_path = sitemap_output_dir / "sitemap" / sitemap_location
+            output_path = (sitemap_output_dir / sitemap_location).with_suffix(".xml")
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            write_tree_to_file(tree, output_path.with_suffix(".xml"))
+            write_tree_to_file(tree, output_path)
             LOGGER.info(f"Wrote {output_path} to disk")
 
         index = self.make_sitemap_index(
