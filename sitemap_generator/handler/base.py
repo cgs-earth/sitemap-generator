@@ -1,8 +1,9 @@
 # =================================================================
 #
 # Authors: Benjamin Webb <bwebb@lincolninst.edu>
+#          Colton Loftus <cloftus@lincolninst.edu>
 #
-# Copyright (c) 2023 Benjamin Webb
+# Copyright (c) 2026 Lincoln Institute of Land Policy
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,138 +28,117 @@
 #
 # =================================================================
 
-from datetime import datetime
 import logging
-import os
 from pathlib import Path
-from shutil import copy2
-from typing import Iterator
+from typing import Optional
+from xml.etree import ElementTree as ET
 
-from sitemap_generator.util import (url_join, get_smi, add_smi_node,
-                                    get_urlset, add_urlset_node,
-                                    write_tree)
+from sitemap_generator.util import (
+    SitemapSourceWithMetadata,
+    csv_to_sitemap_url_list,
+    get_all_sitemap_sources,
+    write_tree_to_file,
+)
+
 
 LOGGER = logging.getLogger(__name__)
 
+URLSET = """<?xml version="1.0"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+</urlset>
+"""
 
-# Sitemap directory objects
-SITEMAP_DIR = Path(os.environ.get('SITEMAP_DIR', '/sitemap'))
+URLSET_FOREACH = """
+<url>
+    <loc>{}</loc>
+    <lastmod>{}</lastmod>
+</url>
+"""
+
+SITEMAPINDEX = """<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+</sitemapindex>
+"""
 
 
-class BaseHandler:
-    """Sitemap Generator Handler"""
+class FileSystemHandler:
+    """Generate sitemaps from data in the filesystem and write them to disk"""
 
-    def __init__(self, filepath: Path, uri_stem: str) -> None:
+    def generate(
+        self, namespace_input_dir: Path, uri_base: str, sitemap_output_dir: Path
+    ) -> None:
         """
-        Sitemap handler initializer
-
-        :param filepath: `Path` of filepath to handle
-        :param uri_stem: `str` of sitemap location
+        Generate a sitemap index xml and sitemaps from the input directory
+        and write them to disk in the output directory
 
         :returns: `None`
         """
-        self.root_path = filepath
-        self.uri_stem = uri_stem
+        sources = get_all_sitemap_sources(namespace_input_dir)
 
-    def handle(self) -> None:
-        """
-        Handle sitemap creation sitemapindex
-
-        :returns: `None`
-        """
-        raise NotImplementedError
-
-    def parse(self) -> None:
-        """
-        Parse sitemap creation sitemapindex
-
-        :returns: `None`
-        """
-        raise NotImplementedError
-
-    def get_filetime(self, filename: Path) -> str:
-        """
-        Gets relative path to file.
-
-        :param filename: `Path` of file
-
-        :returns file_time: `str` of file lastmod as W3C Datetime
-        """
-        raise NotImplementedError
-
-    def get_rel_path(self, filename: Path) -> str:
-        """
-        Gets relative path to file.
-
-        :param filename: `Path` of file
-
-        :returns parent: `str` of parent path
-        """
-        raise NotImplementedError
-
-    def make_urlset(self, filename: Path) -> None:
-        """
-        Create urlset from csv file.
-
-        :param filename: `Path` of source file for urlset
-
-        :returns: `None`
-        """
-        LOGGER.debug(f'Making urlset for {filename}')
-        file_time = self.get_filetime(filename)
-        urlsets = self.parse(filename)
-
-        for i, chunk in enumerate(urlsets):
-            # Build sitemaps for each csv file
-            tree, root = get_urlset()
-            for line in chunk:
-                url_ = line[0]
-                if '$' in url_:
-                    LOGGER.warning(f'Regex detected in {filename}')
-                    return
-                add_urlset_node(root, url_, file_time)
-
-            # Write sitemap.xml
-            fidx = f'{filename.stem}__{i}'
-            sitemap_file = (filename.parent / fidx).with_suffix('.xml')
-            write_tree(tree, sitemap_file)
-
-            _ = datetime.strptime(file_time, '%Y-%m-%dT%H:%M:%SZ')
-            mtime = _.timestamp()
-            atime = datetime.now().timestamp()
-            os.utime(sitemap_file, (atime, mtime))
-
-    def make_sitemap(self, files: Iterator[Path]) -> None:
-        """
-        Create sitemapindex
-
-        :param files: `Iterator` of urlsets to index
-
-        :returns: `None`
-        """
-        tree, root = get_smi()
-        for f in files:
-            LOGGER.debug(f'Processing urlset: {f.resolve()}')
-
-            try:
-                # Make sure file is sitemap
-                int(f.stem.split('__').pop())
-            except ValueError:
-                LOGGER.error(f'Skipping {f.name}')
+        for source in sources:
+            tree = self.make_sitemap(source)
+            skip_including_in_sitemap_index = not tree
+            if skip_including_in_sitemap_index:
                 continue
 
-            # Move xml to /sitemaps
-            filepath = (SITEMAP_DIR / self.get_rel_path(f))
-            filepath.mkdir(parents=True, exist_ok=True)
-            file_path = filepath / f.name
-            LOGGER.debug(f'Copying urlset to {filepath}')
-            copy2(f, file_path)
+            sitemap_location = source.canonical_sitemap_name(namespace_input_dir)
+            output_path = (sitemap_output_dir / sitemap_location).with_suffix(".xml")
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            write_tree_to_file(tree, output_path)
+            LOGGER.info(f"Wrote {output_path} to disk")
 
-            # create to link /sitemap/_sitemap.xml
-            file_time = self.get_filetime(file_path)
-            url_ = url_join(self.uri_stem, file_path)
-            add_smi_node(root, url_, file_time)
+        index = self.make_sitemap_index(
+            base_uri=uri_base, sources=sources, root_dir=namespace_input_dir
+        )
+        write_tree_to_file(index, sitemap_output_dir / "sitemap.xml")
+        LOGGER.info(f"Wrote sitemap index to disk at {sitemap_output_dir}/sitemap.xml")
 
-        sitemap_out = SITEMAP_DIR / '_sitemap.xml'
-        LOGGER.debug(f'Writing sitemapindex to {sitemap_out}')
-        write_tree(tree, sitemap_out)
+    def make_sitemap(
+        self, source: SitemapSourceWithMetadata
+    ) -> Optional[ET.ElementTree[ET.Element[str]]]:
+        """
+        Given a source within the filesystem tree, generate a sitemap XML
+        associated with that source if it is appropriate to include,
+        otherwise return None
+        """
+        match source.file_type:
+            case "pregenerated_xml":
+                with open(source.path) as f:
+                    return ET.parse(f)
+            case "regex_csv":
+                return None
+            case "one_to_one_csv":
+                xml_root = ET.fromstring(URLSET)
+                tree: ET.ElementTree[ET.Element[str]] = ET.ElementTree(xml_root)
+
+                for mapper in csv_to_sitemap_url_list(source.path):
+                    url_element = ET.fromstring(
+                        URLSET_FOREACH.format(mapper.geoconnex_pid, mapper.source_url)
+                    )
+                    xml_root.append(url_element)
+
+                return tree
+            case _:
+                raise ValueError(f"Unknown file type: {source.file_type}")
+
+    def make_sitemap_index(
+        self, base_uri: str, sources: list[SitemapSourceWithMetadata], root_dir: Path
+    ) -> ET.ElementTree:
+        """
+        Builds a sitemap index XML from CSV files and their metadata.
+        """
+
+        xml_root = ET.fromstring(SITEMAPINDEX)
+        tree = ET.ElementTree(xml_root)
+        assert isinstance(tree, ET.ElementTree)
+
+        for src in sources:
+            # regex csvs shouldnt be a part of the sitemap,
+            # only the pregenerated xml that is associated with them
+            if src.file_type == "regex_csv":
+                continue
+            sitemap_element = src.source_to_xml_for_index(base_uri, root_dir)
+            ET.indent(sitemap_element, space="  ")
+            xml_root.append(sitemap_element)
+
+        return tree

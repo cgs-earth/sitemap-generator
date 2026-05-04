@@ -1,8 +1,9 @@
 # =================================================================
 #
 # Authors: Benjamin Webb <bwebb@lincolninst.edu>
+#          Colton Loftus <cloftus@lincolninst.edu>
 #
-# Copyright (c) 2023 Benjamin Webb
+# Copyright (c) 2026 Lincoln Institute of Land Policy
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -27,27 +28,47 @@
 #
 # =================================================================
 
-'''Handler classs'''
+"""Handler classs"""
 
 import click
 from pathlib import Path
 
-from sitemap_generator.handler.filesystem import FileSystemHandler
+from sitemap_generator.handler.base import FileSystemHandler
 from sitemap_generator.util import OPTION_VERBOSITY
 
 
 @click.command()
 @click.pass_context
 @OPTION_VERBOSITY
-@click.argument('filepath', type=click.Path())
-@click.option('-s', '--uri_stem', type=str, default='https://geoconnex.us/',
-              help='uri stem to be removed from short url for keyword')
-def run(ctx, verbosity, filepath, uri_stem):
-    filepath = Path(filepath)
-    if filepath.is_dir():
-        handler = FileSystemHandler(filepath, uri_stem)
-        handler.handle()
+@click.argument(
+    "namespace-input-dir",
+    type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
+)
+@click.option(
+    "-u",
+    "--uri-base",
+    type=str,
+    default="https://geoconnex.us",
+    help="uri stem to be removed from short url for keyword",
+)
+@click.option(
+    "-o",
+    "--sitemap-output-dir",
+    type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
+    envvar="SITEMAP_DIR",
+    default=Path("/tmp/sitemaps"),
+)
+def run(
+    ctx, verbosity, namespace_input_dir: Path, uri_base: str, sitemap_output_dir: Path
+):
+    """Generate sitemaps from data in the filesystem and write them to disk"""
+    handler = FileSystemHandler()
+    handler.generate(
+        namespace_input_dir=namespace_input_dir,
+        uri_base=uri_base,
+        sitemap_output_dir=sitemap_output_dir,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run()
