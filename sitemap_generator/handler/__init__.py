@@ -56,7 +56,7 @@ from sitemap_generator.util import OPTION_VERBOSITY
     "--sitemap-output-dir",
     type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
     envvar="SITEMAP_DIR",
-    default=Path("/tmp/sitemaps")
+    default=Path("/tmp/sitemaps"),
 )
 def run(
     ctx, verbosity, namespace_input_dir: Path, uri_base: str, sitemap_output_dir: Path
@@ -66,7 +66,7 @@ def run(
     handler.generate(
         namespace_input_dir=namespace_input_dir,
         uri_base=uri_base,
-        sitemap_output_dir=sitemap_output_dir
+        sitemap_output_dir=sitemap_output_dir,
     )
 
 

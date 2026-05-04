@@ -37,7 +37,7 @@ from sitemap_generator.util import (
     SitemapSourceWithMetadata,
     csv_to_sitemap_url_list,
     get_all_sitemap_sources,
-    write_tree_to_file
+    write_tree_to_file,
 )
 
 
@@ -59,6 +59,7 @@ SITEMAPINDEX = """<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </sitemapindex>
 """
+
 
 class FileSystemHandler:
     """Generate sitemaps from data in the filesystem and write them to disk"""
@@ -82,9 +83,7 @@ class FileSystemHandler:
 
             sitemap_location = source.canonical_sitemap_name(namespace_input_dir)
             output_path = (
-                sitemap_output_dir
-                / "sitemap"
-                / sitemap_location
+                sitemap_output_dir / "sitemap" / sitemap_location
             ).with_suffix(".xml")
             output_path.parent.mkdir(parents=True, exist_ok=True)
             write_tree_to_file(tree, output_path)
@@ -96,9 +95,7 @@ class FileSystemHandler:
         write_tree_to_file(index, sitemap_output_dir / "sitemap.xml")
         LOGGER.info(f"Wrote sitemap index to disk at {sitemap_output_dir}/sitemap.xml")
 
-    def make_sitemap(
-        self, source: SitemapSourceWithMetadata
-    ) -> ET.ElementTree | Any:
+    def make_sitemap(self, source: SitemapSourceWithMetadata) -> ET.ElementTree | Any:
         """
         Given a source within the filesystem tree, generate a sitemap XML
         associated with that source if it is appropriate to include,
@@ -111,7 +108,6 @@ class FileSystemHandler:
             case "regex_csv":
                 return None
             case "one_to_one_csv":
-
                 xml_root = ET.fromstring(URLSET)
                 tree: ET.ElementTree[ET.Element[str]] = ET.ElementTree(xml_root)
 
