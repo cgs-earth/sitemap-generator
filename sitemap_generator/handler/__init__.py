@@ -39,31 +39,33 @@ from sitemap_generator.util import OPTION_VERBOSITY
 @click.command()
 @click.pass_context
 @OPTION_VERBOSITY
-@click.argument("namespace_input_dir", type=click.Path())
+@click.argument(
+    "namespace-input-dir",
+    type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
+)
 @click.option(
     "-u",
-    "--uri_base",
+    "--uri-base",
     type=str,
     default="https://geoconnex.us",
     help="uri stem to be removed from short url for keyword",
 )
 @click.option(
     "-o",
-    "--sitemap_output_dir",
-    type=click.Path(),
-    envvar='SITEMAP_DIR',
+    "--sitemap-output-dir",
+    type=click.Path(file_okay=False, dir_okay=True, path_type=Path),
+    envvar="SITEMAP_DIR",
     default=Path("/tmp/sitemaps")
 )
 def run(
     ctx, verbosity, namespace_input_dir: Path, uri_base: str, sitemap_output_dir: Path
 ):
-    namespace_dir = Path(namespace_input_dir)
-    assert namespace_dir.is_dir(), f"{namespace_dir=} must be a directory"
+    """Generate sitemaps from data in the filesystem and write them to disk"""
     handler = FileSystemHandler()
     handler.generate(
-        namespace_input_dir=Path(namespace_input_dir),
+        namespace_input_dir=namespace_input_dir,
         uri_base=uri_base,
-        sitemap_output_dir=Path(sitemap_output_dir),
+        sitemap_output_dir=sitemap_output_dir
     )
 
 
