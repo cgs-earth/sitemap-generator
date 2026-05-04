@@ -52,6 +52,8 @@ repos:
     rev: v1.1.408
     hooks:
     - id: pyright
+      additional_dependencies:
+        - pyright[nodejs]
   - repo: local
     hooks: 
       - id: pytest
