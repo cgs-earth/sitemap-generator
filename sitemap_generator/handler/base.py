@@ -41,6 +41,22 @@ from sitemap_generator.util import (
 
 LOGGER = logging.getLogger(__name__)
 
+URLSET = """<?xml version="1.0"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+</urlset>
+"""
+
+URLSET_FOREACH = """
+<url>
+    <loc>{}</loc>
+    <lastmod>{}</lastmod>
+</url>
+"""
+
+SITEMAPINDEX = """<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+</sitemapindex>
+"""
 
 class FileSystemHandler:
     """Generate sitemaps from data in the filesystem and write them to disk"""
@@ -94,17 +110,6 @@ class FileSystemHandler:
             case "regex_csv":
                 return None
             case "one_to_one_csv":
-                URLSET = """<?xml version="1.0"?>
-                <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-                </urlset>
-                """
-
-                URLSET_FOREACH = """
-                <url>
-                    <loc>{}</loc>
-                    <lastmod>{}</lastmod>
-                </url>
-                """
 
                 xml_root = ET.fromstring(URLSET)
                 tree: ET.ElementTree[ET.Element[str]] = ET.ElementTree(xml_root)
@@ -126,11 +131,6 @@ class FileSystemHandler:
         Builds a sitemap index XML from CSV files and their metadata.
         """
 
-        SITEMAPINDEX = """<?xml version="1.0" encoding="UTF-8"?>
-        <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-        </sitemapindex>
-        """
-
         xml_root = ET.fromstring(SITEMAPINDEX)
         tree = ET.ElementTree(xml_root)
         assert isinstance(tree, ET.ElementTree)
@@ -141,6 +141,7 @@ class FileSystemHandler:
             if src.file_type == "regex_csv":
                 continue
             sitemap_element = src.source_to_xml_for_index(base_uri, root_dir)
+            ET.indent(sitemap_element, space="  ")
             xml_root.append(sitemap_element)
 
         return tree

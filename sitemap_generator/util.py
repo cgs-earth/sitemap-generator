@@ -91,7 +91,6 @@ class SitemapSourceWithMetadata:
         relative_path = self.path.relative_to(root_relative_dir)
         return (
             str(relative_path)
-            .replace("/", "_")
             .replace("-", "_")
             .removesuffix(".csv")
             .removesuffix(".xml")
@@ -105,11 +104,8 @@ class SitemapSourceWithMetadata:
         # Root element with namespaces
         sitemap_el = ET.Element(
             f"{{{SITEMAP_NS}}}sitemap",
-            {
-                "xmlns": SITEMAP_NS,
-                "xmlns:geoconnex": GEOCONNEX_NS,
-            },
         )
+        ET.indent(sitemap_el, space=" ", level=0)
 
         # loc
         loc = ET.SubElement(sitemap_el, f"{{{SITEMAP_NS}}}loc")
