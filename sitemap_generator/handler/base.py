@@ -29,7 +29,7 @@
 
 import logging
 from pathlib import Path
-from typing import Optional
+from typing import Any
 from xml.etree import ElementTree as ET
 
 from sitemap_generator.util import (
@@ -99,7 +99,7 @@ class FileSystemHandler:
 
     def make_sitemap(
         self, source: SitemapSourceWithMetadata
-    ) -> Optional[ET.ElementTree[ET.Element[str]]]:
+    ) -> ET.ElementTree | Any:
         """
         Given a source within the filesystem tree, generate a sitemap XML
         associated with that source if it is appropriate to include,
