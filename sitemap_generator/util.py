@@ -101,7 +101,12 @@ class SitemapSourceWithMetadata:
     def source_to_xml_for_index(self, base_uri: str, root_dir: Path) -> ET.Element:
         SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
         GEOCONNEX_NS = "https://geoconnex.us"
-        last_modified = self.last_modified.isoformat()
+        last_modified = (
+            self.last_modified.astimezone(datetime.timezone.utc)
+            .replace(microsecond=0)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
 
         # Root element with namespaces
         sitemap_el = ET.Element(
