@@ -76,6 +76,10 @@ class FileSystemHandler:
         sources = get_all_sitemap_sources(namespace_input_dir)
 
         for source in sources:
+            if source.metadata.get("skip_crawl"):
+                LOGGER.info(f"Skipping generating sitemap for {source.path}")
+                continue
+
             tree = self.make_sitemap(source)
             skip_including_in_sitemap_index = not tree
             if skip_including_in_sitemap_index:
@@ -134,6 +138,8 @@ class FileSystemHandler:
             # regex csvs shouldnt be a part of the sitemap,
             # only the pregenerated xml that is associated with them
             if src.file_type == "regex_csv":
+                continue
+            if src.metadata.get("skip_crawl"):
                 continue
             sitemap_element = src.source_to_xml_for_index(base_uri, root_dir)
             ET.indent(sitemap_element, space="  ")
