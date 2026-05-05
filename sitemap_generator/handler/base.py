@@ -77,7 +77,7 @@ class FileSystemHandler:
 
         for source in sources:
             if source.metadata.get("skip_crawl"):
-                LOGGER.info(f"Skipping crawl for {source.path}")
+                LOGGER.info(f"Skipping generating sitemap for {source.path}")
                 continue
 
             tree = self.make_sitemap(source)
