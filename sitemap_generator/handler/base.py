@@ -60,6 +60,15 @@ SITEMAPINDEX = """<?xml version="1.0" encoding="UTF-8"?>
 </sitemapindex>
 """
 
+BULK_SITEMAP_TEMPLATE = """<?xml version='1.0' encoding='utf-8'?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:ns1="http://geoconnex.us/schemas/sitemap">
+    <url>
+        <loc>{}</loc>
+        <lastmod>2025-02-05T16:39:34Z</lastmod>
+        <ns1:type>bulk</ns1:type>
+    </url>
+</urlset>"""
+
 
 class FileSystemHandler:
     """Generate sitemaps from data in the filesystem and write them to disk"""
@@ -119,6 +128,14 @@ class FileSystemHandler:
                     )
                     xml_root.append(url_element)
 
+                return tree
+            case "bulk":
+                xml_root = ET.fromstring(
+                    BULK_SITEMAP_TEMPLATE.format(
+                        source.metadata.get("bulk_container_image")
+                    )
+                )
+                tree = ET.ElementTree(xml_root)
                 return tree
             case _:
                 raise ValueError(f"Unknown file type: {source.file_type}")
