@@ -81,10 +81,19 @@ def is_regex_csv(path: Path) -> bool:
         return rows < 5
 
 
+def datettime_to_sitemap_iso_format(timestamp: datetime.datetime) -> str:
+    return (
+        timestamp.astimezone(datetime.timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+
+
 @dataclass
 class SitemapSourceWithMetadata:
     path: Path
-    file_type: Literal["regex_csv", "one_to_one_csv", "pregenerated_xml"]
+    file_type: Literal["regex_csv", "one_to_one_csv", "pregenerated_xml", "bulk"]
     last_modified: datetime.datetime
     metadata: dict
 
@@ -101,12 +110,7 @@ class SitemapSourceWithMetadata:
     def source_to_xml_for_index(self, base_uri: str, root_dir: Path) -> ET.Element:
         SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
         GEOCONNEX_NS = "https://geoconnex.us"
-        last_modified = (
-            self.last_modified.astimezone(datetime.timezone.utc)
-            .replace(microsecond=0)
-            .isoformat()
-            .replace("+00:00", "Z")
-        )
+        last_modified = datettime_to_sitemap_iso_format(self.last_modified)
 
         # Root element with namespaces
         sitemap_el = ET.Element(
@@ -158,6 +162,20 @@ def get_all_sitemap_sources(root_dir: Path) -> list[SitemapSourceWithMetadata]:
             metadata_file = file_path.parent / "metadata.json"
             if metadata_file.exists():
                 metadata_cache[file_path.parent] = json.loads(metadata_file.read_text())
+
+            metadata = json.loads(metadata_file.read_text())
+            if metadata.get("bulk_container_image"):
+                results.append(
+                    SitemapSourceWithMetadata(
+                        last_modified=datetime.datetime.fromtimestamp(
+                            file_path.stat().st_mtime
+                        ),
+                        metadata=metadata,
+                        path=file_path,
+                        file_type="bulk",
+                    )
+                )
+                continue
 
         results.append(
             SitemapSourceWithMetadata(

@@ -36,6 +36,7 @@ from xml.etree import ElementTree as ET
 from sitemap_generator.util import (
     SitemapSourceWithMetadata,
     csv_to_sitemap_url_list,
+    datettime_to_sitemap_iso_format,
     get_all_sitemap_sources,
     write_tree_to_file,
 )
@@ -59,6 +60,15 @@ SITEMAPINDEX = """<?xml version="1.0" encoding="UTF-8"?>
 <sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 </sitemapindex>
 """
+
+BULK_SITEMAP_TEMPLATE = """<?xml version='1.0' encoding='utf-8'?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:ns1="http://geoconnex.us/schemas/sitemap">
+    <url>
+        <loc>{}</loc>
+        <lastmod>{}</lastmod>
+        <ns1:type>bulk</ns1:type>
+    </url>
+</urlset>"""
 
 
 class FileSystemHandler:
@@ -119,6 +129,15 @@ class FileSystemHandler:
                     )
                     xml_root.append(url_element)
 
+                return tree
+            case "bulk":
+                xml_root = ET.fromstring(
+                    BULK_SITEMAP_TEMPLATE.format(
+                        source.metadata.get("bulk_container_image"),
+                        datettime_to_sitemap_iso_format(source.last_modified),
+                    )
+                )
+                tree = ET.ElementTree(xml_root)
                 return tree
             case _:
                 raise ValueError(f"Unknown file type: {source.file_type}")

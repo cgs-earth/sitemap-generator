@@ -42,7 +42,7 @@ def handler():
     return FileSystemHandler()
 
 
-def test_sitemap_index_generation(handler):
+def test_sitemap_index_generation(handler: FileSystemHandler):
     sources = get_all_sitemap_sources(Path(__file__).parent / "data" / "namespaces")
     for source in sources:
         assert source.metadata, (
@@ -89,7 +89,7 @@ def test_sitemap_index_generation(handler):
     assert "contact_email" in written_data
 
 
-def test_sitemap_index_generation_with_missing_metadata(handler):
+def test_sitemap_index_generation_with_missing_metadata(handler: FileSystemHandler):
     sources = get_all_sitemap_sources(
         Path(__file__).parent / "data" / "namespaces_with_missing_metadata"
     )
@@ -127,3 +127,44 @@ def test_sitemap_index_generation_with_missing_metadata(handler):
     tmpFile = tempfile.NamedTemporaryFile()
     write_tree_to_file(tree, Path(tmpFile.name))
     assert Path(tmpFile.name).exists()
+
+
+def test_sitemap_bulk_handler(handler: FileSystemHandler):
+    sources = get_all_sitemap_sources(Path(__file__).parent / "data" / "namespaces")
+
+    bulk_source = [src for src in sources if src.file_type == "bulk"][0]
+    bulk_sitemap = handler.make_sitemap(bulk_source)
+
+    def assert_elements_equal(e1: ElementTree.Element, e2: ElementTree.Element):
+        # Don't check lastmod since it includes a timestamp; assume it is fine
+        if e1.tag.endswith("lastmod"):
+            return
+        assert e1.tag == e2.tag
+        assert (e1.text or "").strip() == (e2.text or "").strip(), (
+            f"Different text {e1.text} and {e2.text} for tag {e1.tag}"
+        )
+        assert e1.attrib == e2.attrib, (
+            f"Different attributes {e1.attrib} and {e2.attrib} for tag {e1.tag}"
+        )
+
+        assert len(e1) == len(e2), f"Different number of children: {e1.tag}"
+
+        for c1, c2 in zip(e1, e2):
+            assert_elements_equal(c1, c2)
+
+    expected = ElementTree.fromstring(
+        """<?xml version='1.0' encoding='utf-8'?>
+        <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+                xmlns:ns1="http://geoconnex.us/schemas/sitemap">
+            <url>
+                <loc>internetofwater/gnis_bulk_rdf:latest</loc>
+                <lastmod>2025-02-05T16:39:34Z</lastmod>
+                <ns1:type>bulk</ns1:type>
+            </url>
+        </urlset>
+        """
+    )
+    root = bulk_sitemap.getroot()
+    assert root is not None
+    # compare root elements
+    assert_elements_equal(root, expected)
