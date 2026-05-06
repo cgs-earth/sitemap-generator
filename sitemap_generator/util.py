@@ -81,6 +81,15 @@ def is_regex_csv(path: Path) -> bool:
         return rows < 5
 
 
+def datettime_to_sitemap_iso_format(timestamp: datetime.datetime) -> str:
+    return (
+        timestamp.astimezone(datetime.timezone.utc)
+        .replace(microsecond=0)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
+
+
 @dataclass
 class SitemapSourceWithMetadata:
     path: Path
@@ -101,12 +110,7 @@ class SitemapSourceWithMetadata:
     def source_to_xml_for_index(self, base_uri: str, root_dir: Path) -> ET.Element:
         SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
         GEOCONNEX_NS = "https://geoconnex.us"
-        last_modified = (
-            self.last_modified.astimezone(datetime.timezone.utc)
-            .replace(microsecond=0)
-            .isoformat()
-            .replace("+00:00", "Z")
-        )
+        last_modified = datettime_to_sitemap_iso_format(self.last_modified)
 
         # Root element with namespaces
         sitemap_el = ET.Element(

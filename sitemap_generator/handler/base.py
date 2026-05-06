@@ -36,6 +36,7 @@ from xml.etree import ElementTree as ET
 from sitemap_generator.util import (
     SitemapSourceWithMetadata,
     csv_to_sitemap_url_list,
+    datettime_to_sitemap_iso_format,
     get_all_sitemap_sources,
     write_tree_to_file,
 )
@@ -132,7 +133,8 @@ class FileSystemHandler:
             case "bulk":
                 xml_root = ET.fromstring(
                     BULK_SITEMAP_TEMPLATE.format(
-                        source.metadata.get("bulk_container_image")
+                        source.metadata.get("bulk_container_image"),
+                        datettime_to_sitemap_iso_format(source.last_modified),
                     )
                 )
                 tree = ET.ElementTree(xml_root)
