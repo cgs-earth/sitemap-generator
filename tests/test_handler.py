@@ -136,6 +136,9 @@ def test_sitemap_bulk_handler(handler: FileSystemHandler):
     bulk_sitemap = handler.make_sitemap(bulk_source)
 
     def assert_elements_equal(e1: ElementTree.Element, e2: ElementTree.Element):
+        # Don't check lastmod since it includes a timestamp; assume it is fine
+        if e1.tag.endswith("lastmod"):
+            return
         assert e1.tag == e2.tag
         assert (e1.text or "").strip() == (e2.text or "").strip(), (
             f"Different text {e1.text} and {e2.text} for tag {e1.tag}"
