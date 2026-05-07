@@ -44,14 +44,10 @@ inputs:
     description: "Directory for sitemap output"
     required: true
     default: "./sitemap"
-  source_repo:
-    description: "Source repository"
+  base_uri:
+    description: "Base URI for sitemap"
     required: true
-    default: "geoconnex.us"
-  source_repo_path:
-    description: "Filepath to git lastmod from"
-    required: true
-    default: "namespaces"
+    default: "https://geoconnex.us"
 outputs:
   sitemap:
     description: "Sitemap folder"
@@ -63,7 +59,7 @@ runs:
         SITEMAP_DIR: ${{ inputs.sitemap_dir }}
       run: |
         pip3 install git+https://github.com/cgs-earth/sitemap-generator.git
-        sitemap-generator run ${{ inputs.namespace_dir }}
+        sitemap-generator run ${{ inputs.namespace_dir }} --uri-base ${{ inputs.base_uri }}
 
     - name: Zip sitemap
       uses: vimtor/action-zip@v1
