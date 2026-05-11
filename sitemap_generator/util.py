@@ -162,8 +162,8 @@ def get_all_sitemap_sources(root_dir: Path) -> list[SitemapSourceWithMetadata]:
             metadata_file = file_path.parent / "metadata.json"
             if metadata_file.exists():
                 metadata_cache[file_path.parent] = json.loads(metadata_file.read_text())
+                metadata = json.loads(metadata_file.read_text())
 
-            metadata = json.loads(metadata_file.read_text())
             if metadata.get("bulk_container_image"):
                 results.append(
                     SitemapSourceWithMetadata(
@@ -177,12 +177,13 @@ def get_all_sitemap_sources(root_dir: Path) -> list[SitemapSourceWithMetadata]:
                 )
                 continue
 
+        metadata = metadata_cache.get(file_path.parent, {})
         results.append(
             SitemapSourceWithMetadata(
                 last_modified=datetime.datetime.fromtimestamp(
                     file_path.stat().st_mtime
                 ),
-                metadata=metadata_cache.get(file_path.parent) or {},
+                metadata=metadata,
                 path=file_path,
                 file_type="regex_csv" if is_regex_csv(file_path) else "one_to_one_csv",
             )
