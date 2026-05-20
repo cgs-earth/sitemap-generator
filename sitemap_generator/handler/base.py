@@ -52,7 +52,6 @@ URLSET = """<?xml version="1.0"?>
 URLSET_FOREACH = """
 <url>
     <loc>{}</loc>
-    <lastmod>{}</lastmod>
 </url>
 """
 
@@ -125,7 +124,7 @@ class FileSystemHandler:
 
                 for mapper in csv_to_sitemap_url_list(source.path):
                     url_element = ET.fromstring(
-                        URLSET_FOREACH.format(mapper.geoconnex_pid, mapper.source_url)
+                        URLSET_FOREACH.format(mapper.geoconnex_pid)
                     )
                     xml_root.append(url_element)
 
