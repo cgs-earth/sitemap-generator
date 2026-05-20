@@ -53,7 +53,7 @@ def test_sitemap_index_generation(handler: FileSystemHandler):
     )
 
     sources_to_crawl = len(
-        [src for src in sources if not src.metadata.get("skip_crawl")]
+        [src for src in sources if not src.metadata.get("skip_crawling")]
     )
     sitemaps_in_index = len(tree.findall("{*}sitemap"))
     assert sources_to_crawl == sitemaps_in_index, (

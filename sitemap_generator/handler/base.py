@@ -86,7 +86,7 @@ class FileSystemHandler:
         sources = get_all_sitemap_sources(namespace_input_dir)
 
         for source in sources:
-            if source.metadata.get("skip_crawl"):
+            if source.metadata.get("skip_crawling"):
                 LOGGER.info(f"Skipping generating sitemap for {source.path}")
                 continue
 
@@ -158,7 +158,7 @@ class FileSystemHandler:
             # only the pregenerated xml that is associated with them
             if src.file_type == "regex_csv":
                 continue
-            if src.metadata.get("skip_crawl"):
+            if src.metadata.get("skip_crawling"):
                 continue
             sitemap_element = src.source_to_xml_for_index(base_uri, root_dir)
             ET.indent(sitemap_element, space="  ")
