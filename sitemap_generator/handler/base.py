@@ -64,8 +64,6 @@ BULK_SITEMAP_TEMPLATE = """<?xml version='1.0' encoding='utf-8'?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:ns1="http://geoconnex.us/schemas/sitemap">
     <url>
         <loc>{}</loc>
-        <lastmod>{}</lastmod>
-        <ns1:type>bulk</ns1:type>
     </url>
 </urlset>"""
 
