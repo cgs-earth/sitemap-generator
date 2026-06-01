@@ -129,7 +129,10 @@ class SitemapSourceWithMetadata:
 
         # sitemap_id
         sitemap_id = ET.SubElement(sitemap_el, f"{{{GEOCONNEX_NS}}}sitemap_id")
-        sitemap_id.text = sitemap_location.replace("/", ":")
+        # Convert the path to a URL/S3-safe URN string.
+        # If the sitemap was in the bulk directory, we remove the bulk prefix given the fact it is an
+        # implementation detail, not a part of the original data
+        sitemap_id.text = sitemap_location.replace("/", ":").removeprefix("bulk:")
 
         # metadata fields (safe escaping handled automatically)
         for key, value in self.metadata.items():

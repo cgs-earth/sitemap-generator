@@ -158,8 +158,6 @@ def test_sitemap_bulk_handler(handler: FileSystemHandler):
                 xmlns:ns1="http://geoconnex.us/schemas/sitemap">
             <url>
                 <loc>internetofwater/gnis_bulk_rdf:latest</loc>
-                <lastmod>2025-02-05T16:39:34Z</lastmod>
-                <ns1:type>bulk</ns1:type>
             </url>
         </urlset>
         """
