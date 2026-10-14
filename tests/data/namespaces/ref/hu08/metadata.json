@@ -1,3 +1,5 @@
 {
+    "sitemap_name": "HUC8 Watersheds",
+    "sitemap_description": "Reference features for USGS 8-digit hydrologic unit code watersheds",
     "contact_email": "test_hu08"
 }

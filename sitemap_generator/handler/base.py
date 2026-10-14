@@ -82,6 +82,11 @@ class FileSystemHandler:
         """
         sources = get_all_sitemap_sources(namespace_input_dir)
 
+        # build the index first so that invalid metadata fails before anything is written
+        index = self.make_sitemap_index(
+            base_uri=uri_base, sources=sources, root_dir=namespace_input_dir
+        )
+
         for source in sources:
             if source.metadata.get("skip_crawling"):
                 LOGGER.info(f"Skipping generating sitemap for {source.path}")
@@ -98,9 +103,6 @@ class FileSystemHandler:
             write_tree_to_file(tree, output_path)
             LOGGER.info(f"Wrote {output_path} to disk")
 
-        index = self.make_sitemap_index(
-            base_uri=uri_base, sources=sources, root_dir=namespace_input_dir
-        )
         write_tree_to_file(index, sitemap_output_dir / "sitemap.xml")
         LOGGER.info(f"Wrote sitemap index to disk at {sitemap_output_dir}/sitemap.xml")
 

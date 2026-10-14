@@ -97,6 +97,24 @@ class SitemapSourceWithMetadata:
     last_modified: datetime.datetime
     metadata: dict
 
+    def _required_metadata(self, key: str) -> str:
+        value = self.metadata.get(key)
+        if not value:
+            raise ValueError(
+                f"Missing required '{key}' key in the metadata.json for {self.path}"
+            )
+        return str(value)
+
+    @property
+    def sitemap_name(self) -> str:
+        """The human readable name of the sitemap; required in the metadata.json"""
+        return self._required_metadata("sitemap_name")
+
+    @property
+    def sitemap_description(self) -> str:
+        """The description of the sitemap; required in the metadata.json"""
+        return self._required_metadata("sitemap_description")
+
     def canonical_sitemap_name(self, root_relative_dir: Path) -> str:
         cleaned_path = (
             self.path.relative_to(root_relative_dir).with_suffix("")  # remove suffix
@@ -134,8 +152,20 @@ class SitemapSourceWithMetadata:
         # implementation detail, not a part of the original data
         sitemap_id.text = sitemap_location.replace("/", ":").removeprefix("bulk:")
 
+        # human readable name and description; both required
+        sitemap_name = ET.SubElement(sitemap_el, f"{{{GEOCONNEX_NS}}}sitemap_name")
+        sitemap_name.text = self.sitemap_name
+
+        sitemap_description = ET.SubElement(
+            sitemap_el, f"{{{GEOCONNEX_NS}}}sitemap_description"
+        )
+        sitemap_description.text = self.sitemap_description
+
         # metadata fields (safe escaping handled automatically)
         for key, value in self.metadata.items():
+            # name and description are already serialized above
+            if key in ("sitemap_name", "sitemap_description"):
+                continue
             el = ET.SubElement(sitemap_el, f"{{{GEOCONNEX_NS}}}{key}")
             el.text = "" if value is None else str(value)
 
