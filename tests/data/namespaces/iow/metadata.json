@@ -1,3 +1,5 @@
 {
+    "dataset_name": "Internet of Water Links",
+    "dataset_description": "Pregenerated Internet of Water link sitemap",
     "contact_email": "test_iow"
 }

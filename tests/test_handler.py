@@ -31,6 +31,7 @@ from pathlib import Path
 from xml.etree import ElementTree
 
 from sitemap_generator.handler.base import FileSystemHandler
+import pytest
 from pytest import fixture
 
 from sitemap_generator.util import get_all_sitemap_sources, write_tree_to_file
@@ -80,6 +81,20 @@ def test_sitemap_index_generation(handler: FileSystemHandler):
             assert elem.find("{*}contact_email") is not None, (
                 f"Missing contact_email in {elem.tag}"
             )
+
+            sitemap_id = elem.find("{*}sitemap_id")
+            dataset_name = elem.find("{*}dataset_name")
+            dataset_description = elem.find("{*}dataset_description")
+            assert dataset_name is not None, f"Missing dataset_name in {elem.tag}"
+            assert dataset_description is not None, (
+                f"Missing dataset_description in {elem.tag}"
+            )
+            assert sitemap_id is not None
+            if sitemap_id.text == "namespaces:ref:hu08":
+                assert dataset_name.text == "HUC8 Watersheds"
+                assert dataset_description.text == (
+                    "Reference features for USGS 8-digit hydrologic unit code watersheds"
+                )
     tmpFile = tempfile.NamedTemporaryFile()
     write_tree_to_file(tree, Path(tmpFile.name))
     assert Path(tmpFile.name).exists()
@@ -93,40 +108,22 @@ def test_sitemap_index_generation_with_missing_metadata(handler: FileSystemHandl
     sources = get_all_sitemap_sources(
         Path(__file__).parent / "data" / "namespaces_with_missing_metadata"
     )
-    tree: ElementTree.ElementTree = handler.make_sitemap_index(
-        "https://geoconnex.us", sources, Path(__file__).parent / "data"
-    )
+    with pytest.raises(ValueError, match="dataset_name"):
+        handler.make_sitemap_index(
+            "https://geoconnex.us", sources, Path(__file__).parent / "data"
+        )
 
-    for elem in tree.iter():
-        if elem.tag is ElementTree.Comment or elem.tag is ElementTree.PI:
-            continue
 
-        # skip root element (sitemapindex)
-        if elem.tag.endswith("sitemapindex"):
-            continue
-
-        if elem.tag.endswith("sitemap"):
-            loc = elem.find("{*}loc")
-            lastmod = elem.find("{*}lastmod")
-
-            assert loc is not None, f"Missing loc in sitemap {elem.tag}"
-            assert lastmod is not None, f"Missing lastModified in sitemap {elem.tag}"
-
-            # test_hu08 should have a contact_email
-            locText = loc.text
-            assert locText, f"Missing loc text in sitemap with loc {loc.text}"
-            if loc is not None and "hu08" in locText:
-                assert elem.find("{*}contact_email") is not None, (
-                    f"Missing contact_email in sitemap with loc {loc.text}"
-                )
-            else:
-                assert elem.find("{*}contact_email") is None, (
-                    f"Unexpected contact_email in sitemap with loc {loc.text}"
-                )
-
-    tmpFile = tempfile.NamedTemporaryFile()
-    write_tree_to_file(tree, Path(tmpFile.name))
-    assert Path(tmpFile.name).exists()
+def test_sitemap_index_requires_description(handler: FileSystemHandler):
+    sources = get_all_sitemap_sources(Path(__file__).parent / "data" / "namespaces")
+    for source in sources:
+        source.metadata = {
+            k: v for k, v in source.metadata.items() if k != "dataset_description"
+        }
+    with pytest.raises(ValueError, match="dataset_description"):
+        handler.make_sitemap_index(
+            "https://geoconnex.us", sources, Path(__file__).parent / "data"
+        )
 
 
 def test_sitemap_bulk_handler(handler: FileSystemHandler):

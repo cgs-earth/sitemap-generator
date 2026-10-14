@@ -1,6 +1,7 @@
 {
-    "contact_email": "cloftus@lincolninst.edu",
+    "dataset_name": "USGS GNIS",
     "dataset_description": "USGS GNIS Bulk Download",
+    "contact_email": "cloftus@lincolninst.edu",
     "dataset_has_html_landing_pages": true,
     "add_associated_mainstems": false,
     "source_code_link": "https://github.com/internetofwater/gnis_bulk_rdf",
