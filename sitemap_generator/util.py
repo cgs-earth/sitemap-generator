@@ -106,14 +106,14 @@ class SitemapSourceWithMetadata:
         return str(value)
 
     @property
-    def sitemap_name(self) -> str:
-        """The human readable name of the sitemap; required in the metadata.json"""
-        return self._required_metadata("sitemap_name")
+    def dataset_name(self) -> str:
+        """The human readable name of the dataset; required in the metadata.json"""
+        return self._required_metadata("dataset_name")
 
     @property
-    def sitemap_description(self) -> str:
-        """The description of the sitemap; required in the metadata.json"""
-        return self._required_metadata("sitemap_description")
+    def dataset_description(self) -> str:
+        """The description of the dataset; required in the metadata.json"""
+        return self._required_metadata("dataset_description")
 
     def canonical_sitemap_name(self, root_relative_dir: Path) -> str:
         cleaned_path = (
@@ -153,18 +153,18 @@ class SitemapSourceWithMetadata:
         sitemap_id.text = sitemap_location.replace("/", ":").removeprefix("bulk:")
 
         # human readable name and description; both required
-        sitemap_name = ET.SubElement(sitemap_el, f"{{{GEOCONNEX_NS}}}sitemap_name")
-        sitemap_name.text = self.sitemap_name
+        dataset_name = ET.SubElement(sitemap_el, f"{{{GEOCONNEX_NS}}}dataset_name")
+        dataset_name.text = self.dataset_name
 
-        sitemap_description = ET.SubElement(
-            sitemap_el, f"{{{GEOCONNEX_NS}}}sitemap_description"
+        dataset_description = ET.SubElement(
+            sitemap_el, f"{{{GEOCONNEX_NS}}}dataset_description"
         )
-        sitemap_description.text = self.sitemap_description
+        dataset_description.text = self.dataset_description
 
         # metadata fields (safe escaping handled automatically)
         for key, value in self.metadata.items():
             # name and description are already serialized above
-            if key in ("sitemap_name", "sitemap_description"):
+            if key in ("dataset_name", "dataset_description"):
                 continue
             el = ET.SubElement(sitemap_el, f"{{{GEOCONNEX_NS}}}{key}")
             el.text = "" if value is None else str(value)

@@ -83,16 +83,16 @@ def test_sitemap_index_generation(handler: FileSystemHandler):
             )
 
             sitemap_id = elem.find("{*}sitemap_id")
-            sitemap_name = elem.find("{*}sitemap_name")
-            sitemap_description = elem.find("{*}sitemap_description")
-            assert sitemap_name is not None, f"Missing sitemap_name in {elem.tag}"
-            assert sitemap_description is not None, (
-                f"Missing sitemap_description in {elem.tag}"
+            dataset_name = elem.find("{*}dataset_name")
+            dataset_description = elem.find("{*}dataset_description")
+            assert dataset_name is not None, f"Missing dataset_name in {elem.tag}"
+            assert dataset_description is not None, (
+                f"Missing dataset_description in {elem.tag}"
             )
             assert sitemap_id is not None
             if sitemap_id.text == "namespaces:ref:hu08":
-                assert sitemap_name.text == "HUC8 Watersheds"
-                assert sitemap_description.text == (
+                assert dataset_name.text == "HUC8 Watersheds"
+                assert dataset_description.text == (
                     "Reference features for USGS 8-digit hydrologic unit code watersheds"
                 )
     tmpFile = tempfile.NamedTemporaryFile()
@@ -108,7 +108,7 @@ def test_sitemap_index_generation_with_missing_metadata(handler: FileSystemHandl
     sources = get_all_sitemap_sources(
         Path(__file__).parent / "data" / "namespaces_with_missing_metadata"
     )
-    with pytest.raises(ValueError, match="sitemap_name"):
+    with pytest.raises(ValueError, match="dataset_name"):
         handler.make_sitemap_index(
             "https://geoconnex.us", sources, Path(__file__).parent / "data"
         )
@@ -118,9 +118,9 @@ def test_sitemap_index_requires_description(handler: FileSystemHandler):
     sources = get_all_sitemap_sources(Path(__file__).parent / "data" / "namespaces")
     for source in sources:
         source.metadata = {
-            k: v for k, v in source.metadata.items() if k != "sitemap_description"
+            k: v for k, v in source.metadata.items() if k != "dataset_description"
         }
-    with pytest.raises(ValueError, match="sitemap_description"):
+    with pytest.raises(ValueError, match="dataset_description"):
         handler.make_sitemap_index(
             "https://geoconnex.us", sources, Path(__file__).parent / "data"
         )
