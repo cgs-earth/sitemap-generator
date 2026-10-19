@@ -90,11 +90,16 @@ def test_sitemap_index_generation(handler: FileSystemHandler):
                 f"Missing dataset_description in {elem.tag}"
             )
             assert sitemap_id is not None
+            add_s2 = elem.find("{*}add_s2")
             if sitemap_id.text == "namespaces:ref:hu08":
                 assert dataset_name.text == "HUC8 Watersheds"
                 assert dataset_description.text == (
                     "Reference features for USGS 8-digit hydrologic unit code watersheds"
                 )
+                assert add_s2 is not None and add_s2.text == "True"
+            else:
+                # add_s2 is optional and should be omitted if not set
+                assert add_s2 is None, f"Unexpected add_s2 in {sitemap_id.text}"
     tmpFile = tempfile.NamedTemporaryFile()
     write_tree_to_file(tree, Path(tmpFile.name))
     assert Path(tmpFile.name).exists()
@@ -121,6 +126,16 @@ def test_sitemap_index_requires_description(handler: FileSystemHandler):
             k: v for k, v in source.metadata.items() if k != "dataset_description"
         }
     with pytest.raises(ValueError, match="dataset_description"):
+        handler.make_sitemap_index(
+            "https://geoconnex.us", sources, Path(__file__).parent / "data"
+        )
+
+
+def test_sitemap_index_add_s2_must_be_boolean(handler: FileSystemHandler):
+    sources = get_all_sitemap_sources(Path(__file__).parent / "data" / "namespaces")
+    for source in sources:
+        source.metadata = {**source.metadata, "add_s2": "yes"}
+    with pytest.raises(ValueError, match="add_s2"):
         handler.make_sitemap_index(
             "https://geoconnex.us", sources, Path(__file__).parent / "data"
         )

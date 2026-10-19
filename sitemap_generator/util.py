@@ -115,6 +115,16 @@ class SitemapSourceWithMetadata:
         """The description of the dataset; required in the metadata.json"""
         return self._required_metadata("dataset_description")
 
+    @property
+    def add_s2(self) -> bool:
+        """Whether to add S2 cells; optional in the metadata.json and disabled if not set"""
+        value = self.metadata.get("add_s2", False)
+        if not isinstance(value, bool):
+            raise ValueError(
+                f"'add_s2' must be a boolean in the metadata.json for {self.path} but got {value!r}"
+            )
+        return value
+
     def canonical_sitemap_name(self, root_relative_dir: Path) -> str:
         cleaned_path = (
             self.path.relative_to(root_relative_dir).with_suffix("")  # remove suffix
@@ -161,10 +171,15 @@ class SitemapSourceWithMetadata:
         )
         dataset_description.text = self.dataset_description
 
+        # optional; omitted from the output if not set in the metadata.json
+        if "add_s2" in self.metadata:
+            add_s2 = ET.SubElement(sitemap_el, f"{{{GEOCONNEX_NS}}}add_s2")
+            add_s2.text = str(self.add_s2)
+
         # metadata fields (safe escaping handled automatically)
         for key, value in self.metadata.items():
-            # name and description are already serialized above
-            if key in ("dataset_name", "dataset_description"):
+            # name, description, and add_s2 are already serialized above
+            if key in ("dataset_name", "dataset_description", "add_s2"):
                 continue
             el = ET.SubElement(sitemap_el, f"{{{GEOCONNEX_NS}}}{key}")
             el.text = "" if value is None else str(value)
