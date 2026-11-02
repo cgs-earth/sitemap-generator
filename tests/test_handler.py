@@ -27,15 +27,15 @@
 #
 # =================================================================
 
+import tempfile
 from pathlib import Path
 from xml.etree import ElementTree
 
-from sitemap_generator.handler.base import FileSystemHandler
 import pytest
 from pytest import fixture
 
+from sitemap_generator.handler.base import FileSystemHandler
 from sitemap_generator.util import get_all_sitemap_sources, write_tree_to_file
-import tempfile
 
 
 @fixture()
