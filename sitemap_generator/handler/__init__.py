@@ -30,8 +30,9 @@
 
 """Handler classs"""
 
-import click
 from pathlib import Path
+
+import click
 
 from sitemap_generator.handler.base import FileSystemHandler
 from sitemap_generator.util import OPTION_VERBOSITY

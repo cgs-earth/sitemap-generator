@@ -39,7 +39,6 @@ from sitemap_generator.handler import run
 @click.version_option(version=__version__)
 def cli():
     """Sitemap Generator"""
-    pass
 
 
 cli.add_command(run)

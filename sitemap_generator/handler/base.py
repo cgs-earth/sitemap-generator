@@ -41,7 +41,6 @@ from sitemap_generator.util import (
     write_tree_to_file,
 )
 
-
 LOGGER = logging.getLogger(__name__)
 
 URLSET = """<?xml version="1.0"?>

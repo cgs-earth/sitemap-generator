@@ -28,18 +28,18 @@
 #
 # =================================================================
 
-from dataclasses import dataclass
-import datetime
-from typing import Generator, Literal, NamedTuple, Any
-
-import click
 import csv
+import datetime
+import json
 import logging
-from pathlib import Path
 import sys
 import xml.etree.ElementTree as ET
-import json
+from collections.abc import Generator
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Literal, NamedTuple
 
+import click
 
 LOGGER = logging.getLogger(__name__)
 
